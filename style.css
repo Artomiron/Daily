@@ -8,6 +8,7 @@
   --accent: #9b7dff;
   --accent-dim: #3a2f66;
   --accent-warm: #ffa65c;
+  --accent-green: #5fd3a0;
   --danger: #e05656;
   --radius: 10px;
 }
@@ -213,6 +214,22 @@ main {
   gap: 8px;
 }
 
+.rate-header {
+  justify-content: flex-end;
+  min-height: 1.2em;
+  margin-bottom: 6px;
+}
+
+.rate-header:has(.rate-progress:empty) { display: none; }
+
+.step-question {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.scale.scale-8 { grid-template-columns: repeat(4, 1fr); }
+
 .rate-progress {
   font-size: 0.8rem;
   color: var(--text-dim);
@@ -334,15 +351,17 @@ main {
 
 .rate-summary-scores {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 14px;
 }
 
 .rate-summary-score {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  text-align: center;
+  gap: 2px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -350,6 +369,11 @@ main {
 }
 
 .rate-summary-score .scale-emoji { font-size: 1.8rem; }
+
+.summary-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
 
 .summary-gratitude {
   margin: 6px 0 12px;
@@ -444,6 +468,14 @@ main {
 .thought-edit:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.thought-remove.confirming {
+  color: #fff;
+  background: var(--danger);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  padding: 4px 10px;
 }
 
 .gratitude-remove,
@@ -612,6 +644,12 @@ main {
   font-weight: 700;
 }
 
+.stat-max {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
 .stat-label {
   font-size: 0.75rem;
   color: var(--text-dim);
@@ -634,7 +672,8 @@ main {
   vertical-align: -1px;
 }
 
-.dot-mood { background: var(--accent); }
+.dot-mental { background: var(--accent); }
+.dot-physical { background: var(--accent-green); }
 .dot-energy { background: var(--accent-warm); }
 
 #stats-chart {

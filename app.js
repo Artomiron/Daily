@@ -3,12 +3,26 @@
 const APP_VERSION = 'v1.2';
 const STORAGE_ENTRIES = 'daily-entries';
 
-const MOOD_LEVELS = [
-  { value: 1, emoji: '😞', text: 'Погано' },
-  { value: 2, emoji: '😕', text: 'Так собі' },
-  { value: 3, emoji: '😐', text: 'Нормально' },
-  { value: 4, emoji: '🙂', text: 'Добре' },
-  { value: 5, emoji: '😄', text: 'Чудово' },
+const MENTAL_LEVELS = [
+  { value: 1, emoji: '😩', text: 'Виснажено' },
+  { value: 2, emoji: '😢', text: 'Пригнічено' },
+  { value: 3, emoji: '😰', text: 'Тривожно' },
+  { value: 4, emoji: '😣', text: 'Напружено' },
+  { value: 5, emoji: '😐', text: 'Рівно' },
+  { value: 6, emoji: '😌', text: 'Спокійно' },
+  { value: 7, emoji: '😊', text: 'Радісно' },
+  { value: 8, emoji: '🤩', text: 'Піднесено' },
+];
+
+const PHYSICAL_LEVELS = [
+  { value: 1, emoji: '🤒', text: 'Хворію' },
+  { value: 2, emoji: '🤕', text: 'Болить' },
+  { value: 3, emoji: '🥴', text: 'Слабкість' },
+  { value: 4, emoji: '😖', text: 'Скутість' },
+  { value: 5, emoji: '😐', text: 'Звичайно' },
+  { value: 6, emoji: '🙂', text: 'Добре' },
+  { value: 7, emoji: '🕊️', text: 'Легкість' },
+  { value: 8, emoji: '💪', text: 'Чудово' },
 ];
 
 const ENERGY_LEVELS = [
@@ -19,6 +33,17 @@ const ENERGY_LEVELS = [
   { value: 5, emoji: '⚡', text: 'Максимум' },
 ];
 
+// Шкали оцінки дня — у порядку кроків
+const METRICS = [
+  { field: 'mental', label: 'Психологічний стан', short: 'Психологічно', levels: MENTAL_LEVELS, color: '--accent' },
+  { field: 'physical', label: 'Фізичний стан', short: 'Фізично', levels: PHYSICAL_LEVELS, color: '--accent-green' },
+  { field: 'energy', label: 'Енергія', short: 'Енергія', levels: ENERGY_LEVELS, color: '--accent-warm' },
+];
+
+function findLevel(metric, value) {
+  return metric.levels.find((l) => l.value === value);
+}
+
 const MIN_GRATITUDE_ROWS = 1;
 
 // ---------- Сховище ----------
@@ -26,10 +51,20 @@ const MIN_GRATITUDE_ROWS = 1;
 function loadEntries() {
   try {
     const raw = localStorage.getItem(STORAGE_ENTRIES);
-    return raw ? JSON.parse(raw) : {};
+    return migrateEntries(raw ? JSON.parse(raw) : {});
   } catch {
     return {};
   }
+}
+
+// Старий «настрій» за шкалою 1–5 переносимо в психологічний стан 1–8
+function migrateEntries(data) {
+  Object.values(data).forEach((entry) => {
+    if (entry.mood && !entry.mental) entry.mental = Math.round(1 + ((entry.mood - 1) * 7) / 4);
+    delete entry.mood;
+    delete entry.emotions;
+  });
+  return data;
 }
 
 let entries = loadEntries();
@@ -39,14 +74,13 @@ function saveEntries() {
 }
 
 function isEntryEmpty(entry) {
-  return !entry.mood
-    && !entry.energy
+  return !METRICS.some((m) => entry[m.field])
     && !(entry.thoughts || []).length
     && !(entry.gratitude || []).some((g) => g.trim());
 }
 
 function getEntry(date) {
-  return entries[date] || { mood: null, energy: null, rated: false, gratitude: [], thoughts: [] };
+  return entries[date] || { mental: null, physical: null, energy: null, rated: false, gratitude: [], thoughts: [] };
 }
 
 function updateEntry(date, changes) {
@@ -153,8 +187,7 @@ function renderToday() {
   dateLabel.textContent = isToday ? `Сьогодні, ${formatLongDate(currentDate)}` : capitalize(formatLongDate(currentDate));
   document.getElementById('go-today').hidden = isToday;
 
-  renderScale('mood-scale', MOOD_LEVELS, 'mood');
-  renderScale('energy-scale', ENERGY_LEVELS, 'energy');
+  METRICS.forEach(renderScale);
   renderGratitude(entry.gratitude || []);
   showRateStep(entry.rated ? 'summary' : 'intro');
   renderThoughts(entry.thoughts || []);
@@ -163,7 +196,7 @@ function renderToday() {
 
 // ---------- Оцінити день ----------
 
-const RATE_STEPS = ['mood', 'energy', 'gratitude'];
+const RATE_STEPS = [...METRICS.map((m) => m.field), 'gratitude'];
 
 function showRateStep(step) {
   RATE_STEPS.forEach((s) => {
@@ -189,8 +222,9 @@ function showRateStep(step) {
 
 function updateStepButtons() {
   const entry = getEntry(currentDate);
-  document.querySelector('#rate-step-mood [data-next-step="energy"]').disabled = !entry.mood;
-  document.querySelector('#rate-step-energy [data-next-step="gratitude"]').disabled = !entry.energy;
+  METRICS.forEach((m) => {
+    document.querySelector(`#rate-step-${m.field} .primary-btn`).disabled = !entry[m.field];
+  });
   document.getElementById('rate-done-btn').disabled = !(entry.gratitude || []).some((g) => g.trim());
 }
 
@@ -210,18 +244,24 @@ document.getElementById('rate-done-btn').addEventListener('click', () => {
   showRateStep('summary');
 });
 
-document.getElementById('rate-start-btn').addEventListener('click', () => showRateStep('mood'));
+document.getElementById('rate-start-btn').addEventListener('click', () => showRateStep(RATE_STEPS[0]));
 
-document.getElementById('rate-edit-btn').addEventListener('click', () => showRateStep('mood'));
+document.getElementById('rate-edit-btn').addEventListener('click', () => showRateStep(RATE_STEPS[0]));
 
 function renderRateSummary() {
   const entry = getEntry(currentDate);
-  const mood = MOOD_LEVELS.find((l) => l.value === entry.mood);
-  const energy = ENERGY_LEVELS.find((l) => l.value === entry.energy);
-  document.getElementById('summary-mood-emoji').textContent = mood ? mood.emoji : '—';
-  document.getElementById('summary-mood-text').textContent = mood ? mood.text : '';
-  document.getElementById('summary-energy-emoji').textContent = energy ? energy.emoji : '—';
-  document.getElementById('summary-energy-text').textContent = energy ? energy.text : '';
+  const scores = document.getElementById('summary-scores');
+  scores.innerHTML = '';
+  METRICS.forEach((m) => {
+    const level = findLevel(m, entry[m.field]);
+    const tile = document.createElement('div');
+    tile.className = 'rate-summary-score';
+    tile.innerHTML = '<span class="scale-emoji"></span><div class="stat-label"></div><div class="summary-text"></div>';
+    tile.querySelector('.scale-emoji').textContent = level ? level.emoji : '—';
+    tile.querySelector('.stat-label').textContent = m.short;
+    tile.querySelector('.summary-text').textContent = level ? level.text : '';
+    scores.appendChild(tile);
+  });
 
   const list = document.getElementById('summary-gratitude');
   list.innerHTML = '';
@@ -232,18 +272,18 @@ function renderRateSummary() {
   });
 }
 
-function renderScale(containerId, levels, field) {
-  const container = document.getElementById(containerId);
-  const selected = getEntry(currentDate)[field];
+function renderScale(metric) {
+  const container = document.getElementById(`${metric.field}-scale`);
+  const selected = getEntry(currentDate)[metric.field];
   container.innerHTML = '';
-  levels.forEach((level) => {
+  metric.levels.forEach((level) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'scale-btn' + (level.value === selected ? ' active' : '');
     btn.innerHTML = `<span class="scale-emoji">${level.emoji}</span><span class="scale-text">${level.text}</span>`;
     btn.addEventListener('click', () => {
-      updateEntry(currentDate, { [field]: level.value });
-      renderScale(containerId, levels, field);
+      updateEntry(currentDate, { [metric.field]: level.value });
+      renderScale(metric);
       updateStepButtons();
     });
     container.appendChild(btn);
@@ -330,8 +370,19 @@ function renderThoughts(thoughts) {
     remove.className = 'thought-remove';
     remove.title = 'Видалити думку';
     remove.textContent = '✕';
+    // Підтвердження другим тапом: confirm() не показується у застосунку з початкового екрана iOS
+    let confirmTimer = null;
     remove.addEventListener('click', () => {
-      if (!confirm('Видалити цю думку?')) return;
+      if (!remove.classList.contains('confirming')) {
+        remove.classList.add('confirming');
+        remove.textContent = 'Видалити?';
+        confirmTimer = setTimeout(() => {
+          remove.classList.remove('confirming');
+          remove.textContent = '✕';
+        }, 3000);
+        return;
+      }
+      clearTimeout(confirmTimer);
       const rest = getEntry(currentDate).thoughts.filter((t) => t.id !== thought.id);
       updateEntry(currentDate, { thoughts: rest });
       renderThoughts(rest);
@@ -417,9 +468,7 @@ function renderHistory() {
     item.type = 'button';
     item.className = 'history-item';
 
-    const mood = MOOD_LEVELS.find((l) => l.value === entry.mood);
-    const energy = ENERGY_LEVELS.find((l) => l.value === entry.energy);
-    const scores = [mood && `${mood.emoji} ${mood.value}`, energy && `${energy.emoji} ${energy.value}`].filter(Boolean).join('  ');
+    const scores = METRICS.map((m) => findLevel(m, entry[m.field])?.emoji).filter(Boolean).join(' ');
 
     const gratitude = (entry.gratitude || []).filter((g) => g.trim());
     const thoughts = entry.thoughts || [];
@@ -485,17 +534,15 @@ function currentStreak() {
 function renderStats() {
   const dates = periodDates(statsDays);
   const periodEntries = dates.map((d) => entries[d]).filter(Boolean);
-  const moods = periodEntries.map((e) => e.mood).filter(Boolean);
-  const energies = periodEntries.map((e) => e.energy).filter(Boolean);
   const gratitudeCount = periodEntries.reduce((sum, e) => sum + (e.gratitude || []).filter((g) => g.trim()).length, 0);
 
-  const avgMood = average(moods);
-  const avgEnergy = average(energies);
-  const fmt = (v) => (v == null ? '—' : v.toFixed(1));
+  const fmt = (v, max) => (v == null ? '—' : `${v.toFixed(1)}<span class="stat-max">/${max}</span>`);
 
   const tiles = [
-    { value: fmt(avgMood), label: 'Середній настрій' },
-    { value: fmt(avgEnergy), label: 'Середня енергія' },
+    ...METRICS.map((m) => ({
+      value: fmt(average(periodEntries.map((e) => e[m.field]).filter(Boolean)), m.levels.length),
+      label: m.label,
+    })),
     { value: `${periodEntries.length}/${statsDays}`, label: 'Днів із записами' },
     { value: `${currentStreak()} 🔥`, label: 'Днів поспіль' },
     { value: gratitudeCount, label: 'Подяк за період' },
@@ -511,8 +558,6 @@ function drawChart(dates) {
   const canvas = document.getElementById('stats-chart');
   const styles = getComputedStyle(document.documentElement);
   const colors = {
-    mood: styles.getPropertyValue('--accent').trim(),
-    energy: styles.getPropertyValue('--accent-warm').trim(),
     grid: styles.getPropertyValue('--border').trim(),
     text: styles.getPropertyValue('--text-dim').trim(),
   };
@@ -526,24 +571,22 @@ function drawChart(dates) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, width, height);
 
-  const pad = { left: 22, right: 18, top: 10, bottom: 24 };
+  const pad = { left: 18, right: 18, top: 10, bottom: 24 };
   const plotW = width - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
   const x = (i) => pad.left + (dates.length === 1 ? plotW / 2 : (i / (dates.length - 1)) * plotW);
-  const y = (v) => pad.top + plotH - ((v - 1) / 4) * plotH;
+  // Шкали різної довжини (1–8 і 1–5), тому малюємо частку від найгіршого до найкращого
+  const y = (share) => pad.top + plotH - share * plotH;
 
   ctx.font = '11px -apple-system, sans-serif';
   ctx.fillStyle = colors.text;
   ctx.strokeStyle = colors.grid;
   ctx.lineWidth = 1;
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  for (let v = 1; v <= 5; v++) {
+  for (let share = 0; share <= 1; share += 0.25) {
     ctx.beginPath();
-    ctx.moveTo(pad.left, y(v));
-    ctx.lineTo(width - pad.right, y(v));
+    ctx.moveTo(pad.left, y(share));
+    ctx.lineTo(width - pad.right, y(share));
     ctx.stroke();
-    ctx.fillText(v, pad.left - 6, y(v));
   }
 
   ctx.textAlign = 'center';
@@ -555,15 +598,18 @@ function drawChart(dates) {
     ctx.fillText(`${date.getDate()}.${String(date.getMonth() + 1).padStart(2, '0')}`, x(i), height - pad.bottom + 8);
   });
 
-  const drawSeries = (field, color) => {
+  const drawSeries = (metric) => {
+    const color = styles.getPropertyValue(metric.color).trim();
+    const max = metric.levels.length;
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     let prev = null;
     dates.forEach((d, i) => {
-      const v = entries[d]?.[field];
-      if (!v) return;
+      const value = entries[d]?.[metric.field];
+      if (!value) return;
+      const v = (value - 1) / (max - 1);
       if (prev) {
         ctx.beginPath();
         ctx.moveTo(x(prev.i), y(prev.v));
@@ -577,8 +623,7 @@ function drawChart(dates) {
     });
   };
 
-  drawSeries('energy', colors.energy);
-  drawSeries('mood', colors.mood);
+  [...METRICS].reverse().forEach(drawSeries);
 }
 
 window.addEventListener('resize', () => {
@@ -630,10 +675,9 @@ importFile.addEventListener('change', async () => {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    const imported = data.entries;
-    if (!imported || typeof imported !== 'object') throw new Error('bad format');
+    if (!data.entries || typeof data.entries !== 'object') throw new Error('bad format');
+    const imported = migrateEntries(data.entries);
     const count = Object.keys(imported).length;
-    if (!confirm(`Імпортувати ${count} записів? Вони об'єднаються з наявними.`)) return;
     Object.entries(imported).forEach(([date, entry]) => {
       entries[date] = mergeEntries(entries[date], entry);
     });
@@ -654,8 +698,7 @@ function mergeEntries(existing, incoming) {
   });
   return {
     ...existing,
-    mood: existing.mood || incoming.mood || null,
-    energy: existing.energy || incoming.energy || null,
+    ...Object.fromEntries(METRICS.map((m) => [m.field, existing[m.field] || incoming[m.field] || null])),
     rated: Boolean(existing.rated || incoming.rated),
     gratitude: unique([...(existing.gratitude || []), ...(incoming.gratitude || [])].filter((g) => g.trim())),
     thoughts,
