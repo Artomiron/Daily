@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Daily">
 
-<link rel="stylesheet" href="style.css?v=1.1">
+<link rel="stylesheet" href="style.css?v=1.2">
 </head>
 <body>
 <header class="topbar">
@@ -43,10 +43,30 @@
         <span id="rate-progress" class="rate-progress"></span>
       </div>
 
-      <div id="rate-step-mood" class="rate-step">
+      <div id="rate-intro" class="rate-intro">
+        <div class="intro-art" aria-hidden="true">
+          <div class="intro-glow"></div>
+          <div class="intro-orbit">
+            <span class="intro-spark s1"></span>
+            <span class="intro-spark s2"></span>
+            <span class="intro-spark s3"></span>
+          </div>
+          <div class="intro-orb">
+            <svg class="intro-heart" viewBox="0 0 32 29" width="44" height="40">
+              <path d="M16 28.5S1 19.6 1 9.6C1 4.8 4.7 1 9.3 1c2.8 0 5.3 1.4 6.7 3.7C17.4 2.4 19.9 1 22.7 1 27.3 1 31 4.8 31 9.6c0 10-15 18.9-15 18.9z" fill="#fff"/>
+            </svg>
+          </div>
+        </div>
+        <p class="intro-title">Як пройшов твій день?</p>
+        <p class="card-hint intro-hint">Три короткі кроки: настрій, енергія та вдячність</p>
+        <button type="button" id="rate-start-btn" class="primary-btn intro-start">Почати</button>
+      </div>
+
+      <div id="rate-step-mood" class="rate-step" hidden>
         <p class="card-hint">Який у мене сьогодні настрій?</p>
         <div id="mood-scale" class="scale"></div>
         <div class="step-actions">
+          <button type="button" class="secondary-btn" data-next-step="intro">← Назад</button>
           <button type="button" class="primary-btn" data-next-step="energy" disabled>Далі</button>
         </div>
       </div>
@@ -149,6 +169,6 @@
   </div>
 </section>
 
-<script src="app.js?v=1.1"></script>
+<script src="app.js?v=1.2"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 // Daily — щоденник стану, думок та вдячності
 
-const APP_VERSION = 'v1.1';
+const APP_VERSION = 'v1.2';
 const STORAGE_ENTRIES = 'daily-entries';
 
 const MOOD_LEVELS = [
@@ -156,7 +156,7 @@ function renderToday() {
   renderScale('mood-scale', MOOD_LEVELS, 'mood');
   renderScale('energy-scale', ENERGY_LEVELS, 'energy');
   renderGratitude(entry.gratitude || []);
-  showRateStep(entry.rated ? 'summary' : 'mood');
+  showRateStep(entry.rated ? 'summary' : 'intro');
   renderThoughts(entry.thoughts || []);
   document.getElementById('save-status').textContent = '';
 }
@@ -169,10 +169,14 @@ function showRateStep(step) {
   RATE_STEPS.forEach((s) => {
     document.getElementById(`rate-step-${s}`).hidden = s !== step;
   });
+  document.getElementById('rate-intro').hidden = step !== 'intro';
   document.getElementById('rate-summary').hidden = step !== 'summary';
 
   const progress = document.getElementById('rate-progress');
-  if (step === 'summary') {
+  if (step === 'intro') {
+    progress.textContent = '';
+    progress.classList.remove('done');
+  } else if (step === 'summary') {
     renderRateSummary();
     progress.textContent = '✓ Оцінено';
     progress.classList.add('done');
@@ -205,6 +209,8 @@ document.getElementById('rate-done-btn').addEventListener('click', () => {
   renderGratitude(getEntry(currentDate).gratitude || []);
   showRateStep('summary');
 });
+
+document.getElementById('rate-start-btn').addEventListener('click', () => showRateStep('mood'));
 
 document.getElementById('rate-edit-btn').addEventListener('click', () => showRateStep('mood'));
 
