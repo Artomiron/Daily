@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Daily">
 
-<link rel="stylesheet" href="style.css?v=1.0">
+<link rel="stylesheet" href="style.css?v=1.1">
 </head>
 <body>
 <header class="topbar">
@@ -38,20 +38,53 @@
     <p id="date-label" class="date-label"></p>
 
     <div class="card">
-      <h2 class="card-title">Як я почуваюсь</h2>
-      <div class="scale-label">Настрій</div>
-      <div id="mood-scale" class="scale" data-field="mood"></div>
-      <div class="scale-label">Енергія</div>
-      <div id="energy-scale" class="scale" data-field="energy"></div>
-      <div class="scale-label">Емоції</div>
-      <div id="emotions" class="chips"></div>
-    </div>
+      <div class="card-title-row">
+        <h2 class="card-title">Оцінити день</h2>
+        <span id="rate-progress" class="rate-progress"></span>
+      </div>
 
-    <div class="card">
-      <h2 class="card-title">🙏 Вдячність</h2>
-      <p class="card-hint">За що я вдячний сьогодні?</p>
-      <div id="gratitude-list" class="gratitude-list"></div>
-      <button type="button" id="add-gratitude-btn" class="text-btn">+ Ще одне</button>
+      <div id="rate-step-mood" class="rate-step">
+        <p class="card-hint">Який у мене сьогодні настрій?</p>
+        <div id="mood-scale" class="scale"></div>
+        <div class="step-actions">
+          <button type="button" class="primary-btn" data-next-step="energy" disabled>Далі</button>
+        </div>
+      </div>
+
+      <div id="rate-step-energy" class="rate-step" hidden>
+        <p class="card-hint">Скільки в мене сьогодні енергії?</p>
+        <div id="energy-scale" class="scale"></div>
+        <div class="step-actions">
+          <button type="button" class="secondary-btn" data-next-step="mood">← Назад</button>
+          <button type="button" class="primary-btn" data-next-step="gratitude" disabled>Далі</button>
+        </div>
+      </div>
+
+      <div id="rate-step-gratitude" class="rate-step" hidden>
+        <p class="card-hint">🙏 За що я вдячний сьогодні?</p>
+        <div id="gratitude-list" class="gratitude-list"></div>
+        <button type="button" id="add-gratitude-btn" class="text-btn">+ Ще одне</button>
+        <div class="step-actions">
+          <button type="button" class="secondary-btn" data-next-step="energy">← Назад</button>
+          <button type="button" id="rate-done-btn" class="primary-btn" disabled>Готово</button>
+        </div>
+      </div>
+
+      <div id="rate-summary" class="rate-summary" hidden>
+        <div class="rate-summary-scores">
+          <div class="rate-summary-score">
+            <span id="summary-mood-emoji" class="scale-emoji"></span>
+            <div><div class="stat-label">Настрій</div><div id="summary-mood-text"></div></div>
+          </div>
+          <div class="rate-summary-score">
+            <span id="summary-energy-emoji" class="scale-emoji"></span>
+            <div><div class="stat-label">Енергія</div><div id="summary-energy-text"></div></div>
+          </div>
+        </div>
+        <div class="stat-label">🙏 Вдячність</div>
+        <ul id="summary-gratitude" class="summary-gratitude"></ul>
+        <button type="button" id="rate-edit-btn" class="text-btn">Змінити</button>
+      </div>
     </div>
 
     <div class="card">
@@ -83,10 +116,6 @@
         <span><i class="dot dot-energy"></i>Енергія</span>
       </div>
       <canvas id="stats-chart" height="220"></canvas>
-    </div>
-    <div class="card">
-      <h2 class="card-title">Найчастіші емоції</h2>
-      <div id="stats-emotions" class="stats-emotions"></div>
     </div>
   </section>
 </main>
@@ -120,6 +149,6 @@
   </div>
 </section>
 
-<script src="app.js?v=1.0"></script>
+<script src="app.js?v=1.1"></script>
 </body>
 </html>

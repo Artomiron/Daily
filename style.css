@@ -206,6 +206,63 @@ main {
   margin: 0 0 12px;
 }
 
+.card-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rate-progress {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.rate-progress.done { color: var(--accent); }
+
+.rate-step[hidden],
+.rate-summary[hidden] { display: none; }
+
+.step-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.primary-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rate-summary-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.rate-summary-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.rate-summary-score .scale-emoji { font-size: 1.8rem; }
+
+.summary-gratitude {
+  margin: 6px 0 12px;
+  padding-left: 20px;
+}
+
+.summary-gratitude li { margin-bottom: 4px; }
+
+.summary-gratitude li::marker { color: var(--accent-warm); }
+
 .scale-label {
   font-size: 0.8rem;
   color: var(--text-dim);
@@ -251,25 +308,8 @@ main {
 
 .scale-btn.active .scale-text { color: var(--text); }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
 
-.chip {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
 
-.chip.active {
-  background: var(--accent-dim);
-  border-color: var(--accent);
-}
 
 .gratitude-list {
   display: flex;
@@ -412,11 +452,6 @@ main {
   white-space: nowrap;
 }
 
-.history-emotions {
-  margin-top: 6px;
-  font-size: 0.8rem;
-  color: var(--accent);
-}
 
 .history-preview {
   margin-top: 6px;
@@ -510,30 +545,9 @@ main {
   display: block;
 }
 
-.stats-emotions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 
-.emotion-bar-row {
-  display: grid;
-  grid-template-columns: 110px 1fr 28px;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-}
 
-.emotion-bar {
-  height: 8px;
-  border-radius: 4px;
-  background: var(--accent);
-}
 
-.emotion-count {
-  color: var(--text-dim);
-  text-align: right;
-}
 
 /* ---------- Модальні вікна ---------- */
 

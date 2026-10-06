@@ -1,6 +1,6 @@
 // Daily — щоденник стану, думок та вдячності
 
-const APP_VERSION = 'v1.0';
+const APP_VERSION = 'v1.1';
 const STORAGE_ENTRIES = 'daily-entries';
 
 const MOOD_LEVELS = [
@@ -19,13 +19,7 @@ const ENERGY_LEVELS = [
   { value: 5, emoji: '⚡', text: 'Максимум' },
 ];
 
-const EMOTIONS = [
-  'Радість', 'Спокій', 'Натхнення', 'Любов', 'Вдячність', 'Інтерес',
-  'Втома', 'Тривога', 'Стрес', 'Сум', 'Роздратування', 'Злість',
-  'Самотність', 'Нудьга', 'Розгубленість',
-];
-
-const MIN_GRATITUDE_ROWS = 3;
+const MIN_GRATITUDE_ROWS = 1;
 
 // ---------- Сховище ----------
 
@@ -47,13 +41,12 @@ function saveEntries() {
 function isEntryEmpty(entry) {
   return !entry.mood
     && !entry.energy
-    && !(entry.emotions || []).length
     && !(entry.thoughts || []).length
     && !(entry.gratitude || []).some((g) => g.trim());
 }
 
 function getEntry(date) {
-  return entries[date] || { mood: null, energy: null, emotions: [], gratitude: [], thoughts: [] };
+  return entries[date] || { mood: null, energy: null, rated: false, gratitude: [], thoughts: [] };
 }
 
 function updateEntry(date, changes) {
@@ -160,16 +153,82 @@ function renderToday() {
   dateLabel.textContent = isToday ? `Сьогодні, ${formatLongDate(currentDate)}` : capitalize(formatLongDate(currentDate));
   document.getElementById('go-today').hidden = isToday;
 
-  renderScale('mood-scale', MOOD_LEVELS, entry.mood, 'mood');
-  renderScale('energy-scale', ENERGY_LEVELS, entry.energy, 'energy');
-  renderEmotions(entry.emotions || []);
+  renderScale('mood-scale', MOOD_LEVELS, 'mood');
+  renderScale('energy-scale', ENERGY_LEVELS, 'energy');
   renderGratitude(entry.gratitude || []);
+  showRateStep(entry.rated ? 'summary' : 'mood');
   renderThoughts(entry.thoughts || []);
   document.getElementById('save-status').textContent = '';
 }
 
-function renderScale(containerId, levels, selected, field) {
+// ---------- Оцінити день ----------
+
+const RATE_STEPS = ['mood', 'energy', 'gratitude'];
+
+function showRateStep(step) {
+  RATE_STEPS.forEach((s) => {
+    document.getElementById(`rate-step-${s}`).hidden = s !== step;
+  });
+  document.getElementById('rate-summary').hidden = step !== 'summary';
+
+  const progress = document.getElementById('rate-progress');
+  if (step === 'summary') {
+    renderRateSummary();
+    progress.textContent = '✓ Оцінено';
+    progress.classList.add('done');
+  } else {
+    progress.textContent = `Крок ${RATE_STEPS.indexOf(step) + 1} з ${RATE_STEPS.length}`;
+    progress.classList.remove('done');
+  }
+  updateStepButtons();
+}
+
+function updateStepButtons() {
+  const entry = getEntry(currentDate);
+  document.querySelector('#rate-step-mood [data-next-step="energy"]').disabled = !entry.mood;
+  document.querySelector('#rate-step-energy [data-next-step="gratitude"]').disabled = !entry.energy;
+  document.getElementById('rate-done-btn').disabled = !(entry.gratitude || []).some((g) => g.trim());
+}
+
+document.querySelectorAll('[data-next-step]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    showRateStep(btn.dataset.nextStep);
+    if (btn.dataset.nextStep === 'gratitude') {
+      const empty = [...gratitudeList.querySelectorAll('input')].find((i) => !i.value.trim());
+      if (empty) empty.focus();
+    }
+  });
+});
+
+document.getElementById('rate-done-btn').addEventListener('click', () => {
+  updateEntry(currentDate, { rated: true });
+  renderGratitude(getEntry(currentDate).gratitude || []);
+  showRateStep('summary');
+});
+
+document.getElementById('rate-edit-btn').addEventListener('click', () => showRateStep('mood'));
+
+function renderRateSummary() {
+  const entry = getEntry(currentDate);
+  const mood = MOOD_LEVELS.find((l) => l.value === entry.mood);
+  const energy = ENERGY_LEVELS.find((l) => l.value === entry.energy);
+  document.getElementById('summary-mood-emoji').textContent = mood ? mood.emoji : '—';
+  document.getElementById('summary-mood-text').textContent = mood ? mood.text : '';
+  document.getElementById('summary-energy-emoji').textContent = energy ? energy.emoji : '—';
+  document.getElementById('summary-energy-text').textContent = energy ? energy.text : '';
+
+  const list = document.getElementById('summary-gratitude');
+  list.innerHTML = '';
+  (entry.gratitude || []).filter((g) => g.trim()).forEach((g) => {
+    const li = document.createElement('li');
+    li.textContent = g;
+    list.appendChild(li);
+  });
+}
+
+function renderScale(containerId, levels, field) {
   const container = document.getElementById(containerId);
+  const selected = getEntry(currentDate)[field];
   container.innerHTML = '';
   levels.forEach((level) => {
     const btn = document.createElement('button');
@@ -177,31 +236,11 @@ function renderScale(containerId, levels, selected, field) {
     btn.className = 'scale-btn' + (level.value === selected ? ' active' : '');
     btn.innerHTML = `<span class="scale-emoji">${level.emoji}</span><span class="scale-text">${level.text}</span>`;
     btn.addEventListener('click', () => {
-      const current = getEntry(currentDate)[field];
-      updateEntry(currentDate, { [field]: current === level.value ? null : level.value });
-      renderScale(containerId, levels, getEntry(currentDate)[field], field);
+      updateEntry(currentDate, { [field]: level.value });
+      renderScale(containerId, levels, field);
+      updateStepButtons();
     });
     container.appendChild(btn);
-  });
-}
-
-function renderEmotions(selected) {
-  const container = document.getElementById('emotions');
-  container.innerHTML = '';
-  EMOTIONS.forEach((name) => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'chip' + (selected.includes(name) ? ' active' : '');
-    chip.textContent = name;
-    chip.addEventListener('click', () => {
-      const emotions = [...(getEntry(currentDate).emotions || [])];
-      const idx = emotions.indexOf(name);
-      if (idx >= 0) emotions.splice(idx, 1);
-      else emotions.push(name);
-      updateEntry(currentDate, { emotions });
-      chip.classList.toggle('active', emotions.includes(name));
-    });
-    container.appendChild(chip);
   });
 }
 
@@ -211,9 +250,10 @@ const gratitudeList = document.getElementById('gratitude-list');
 
 function renderGratitude(items) {
   gratitudeList.innerHTML = '';
-  const rows = Math.max(MIN_GRATITUDE_ROWS, items.length);
+  const filled = items.filter((g) => g.trim());
+  const rows = Math.max(MIN_GRATITUDE_ROWS, filled.length);
   for (let i = 0; i < rows; i++) {
-    addGratitudeRow(items[i] || '', i);
+    addGratitudeRow(filled[i] || '', i);
   }
 }
 
@@ -256,6 +296,7 @@ function saveGratitude() {
   // Порожні рядки в кінці не зберігаємо, але проміжні лишаємо, щоб нумерація не стрибала
   while (values.length && !values[values.length - 1].trim()) values.pop();
   updateEntry(currentDate, { gratitude: values });
+  updateStepButtons();
 }
 
 document.getElementById('add-gratitude-btn').addEventListener('click', () => {
@@ -349,7 +390,6 @@ function entrySearchText(entry) {
   return [
     ...(entry.thoughts || []).map((t) => t.text),
     ...(entry.gratitude || []),
-    ...(entry.emotions || []),
   ].join(' ').toLowerCase();
 }
 
@@ -388,12 +428,10 @@ function renderHistory() {
         <span class="history-date"></span>
         <span class="history-scores"></span>
       </div>
-      ${(entry.emotions || []).length ? '<div class="history-emotions"></div>' : ''}
       ${preview ? '<div class="history-preview"></div>' : ''}
     `;
     item.querySelector('.history-date').textContent = formatShortDate(date);
     item.querySelector('.history-scores').textContent = [scores, counts].filter(Boolean).join('   ');
-    if (entry.emotions?.length) item.querySelector('.history-emotions').textContent = entry.emotions.join(' · ');
     if (preview) item.querySelector('.history-preview').textContent = preview;
 
     item.addEventListener('click', () => {
@@ -461,25 +499,6 @@ function renderStats() {
     .join('');
 
   drawChart(dates);
-  renderEmotionStats(periodEntries);
-}
-
-function renderEmotionStats(periodEntries) {
-  const counts = {};
-  periodEntries.forEach((e) => (e.emotions || []).forEach((name) => { counts[name] = (counts[name] || 0) + 1; }));
-  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const container = document.getElementById('stats-emotions');
-  if (!sorted.length) {
-    container.innerHTML = '<p class="card-hint">Ще немає відмічених емоцій за цей період.</p>';
-    return;
-  }
-  const max = sorted[0][1];
-  container.innerHTML = sorted.map(([name, count]) => `
-    <div class="emotion-bar-row">
-      <span>${name}</span>
-      <div class="emotion-bar" style="width:${Math.max(4, (count / max) * 100)}%"></div>
-      <span class="emotion-count">${count}</span>
-    </div>`).join('');
 }
 
 function drawChart(dates) {
@@ -631,7 +650,7 @@ function mergeEntries(existing, incoming) {
     ...existing,
     mood: existing.mood || incoming.mood || null,
     energy: existing.energy || incoming.energy || null,
-    emotions: unique([...(existing.emotions || []), ...(incoming.emotions || [])]),
+    rated: Boolean(existing.rated || incoming.rated),
     gratitude: unique([...(existing.gratitude || []), ...(incoming.gratitude || [])].filter((g) => g.trim())),
     thoughts,
   };
