@@ -14,7 +14,7 @@ const PHYSICAL_LEVELS = [
   { value: 8, emoji: '💪', text: 'Чудово' },
 ];
 
-// Шкали оцінки дня (психологічний стан — окремо, у psych.js)
+// Шкали оцінки дня (психологічний стан — окремо, у circumplex.js)
 const METRICS = [
   { field: 'physical', label: 'Фізичний стан', short: 'Фізично', levels: PHYSICAL_LEVELS, color: '--accent-green' },
 ];
@@ -36,11 +36,16 @@ function loadEntries() {
   }
 }
 
-// Старі шкали (настрій, психологічний стан 1–8, енергія) замінені моделями з psych.js.
+// Старі шкали (настрій, психологічний стан 1–8, енергія) замінені циркумплексом.
 // Їхні значення лишаються в записі, але більше не показуються
 function migrateEntries(data) {
   Object.values(data).forEach((entry) => {
     delete entry.emotions;
+    // Тестова версія з трьома моделями: лишаємо тільки циркумплекс
+    if (entry.psych) {
+      if (entry.psych.circumplex && !entry.state) entry.state = entry.psych.circumplex;
+      delete entry.psych;
+    }
   });
   return data;
 }
@@ -53,13 +58,13 @@ function saveEntries() {
 
 function isEntryEmpty(entry) {
   return !METRICS.some((m) => entry[m.field])
-    && !Object.values(entry.psych || {}).some(Boolean)
+    && !entry.state
     && !(entry.thoughts || []).length
     && !(entry.gratitude || []).some((g) => g.trim());
 }
 
 function getEntry(date) {
-  return entries[date] || { psych: {}, physical: null, rated: false, gratitude: [], thoughts: [] };
+  return entries[date] || { state: null, physical: null, rated: false, gratitude: [], thoughts: [] };
 }
 
 function updateEntry(date, changes) {
@@ -167,7 +172,6 @@ function renderToday() {
   document.getElementById('go-today').hidden = isToday;
 
   METRICS.forEach(renderScale);
-  renderModelSwitch();
   renderGratitude(entry.gratitude || []);
   showRateStep(entry.rated ? 'summary' : 'intro');
   renderThoughts(entry.thoughts || []);
@@ -176,7 +180,7 @@ function renderToday() {
 
 // ---------- Оцінити день ----------
 
-const RATE_STEPS = ['psych', ...METRICS.map((m) => m.field), 'gratitude'];
+const RATE_STEPS = ['state', ...METRICS.map((m) => m.field), 'gratitude'];
 
 function showRateStep(step) {
   RATE_STEPS.forEach((s) => {
@@ -184,9 +188,9 @@ function showRateStep(step) {
   });
   document.getElementById('rate-intro').hidden = step !== 'intro';
   document.getElementById('rate-summary').hidden = step !== 'summary';
-  if (step === 'psych') {
-    getPsychModel().resetScreen?.(getEntry(currentDate).psych?.[getPsychModel().id]);
-    renderPsych();
+  if (step === 'state') {
+    resetStateScreen(getEntry(currentDate).state);
+    renderStateStep();
   }
 
   const progress = document.getElementById('rate-progress');
@@ -206,8 +210,7 @@ function showRateStep(step) {
 
 function updateStepButtons() {
   const entry = getEntry(currentDate);
-  const model = getPsychModel();
-  document.querySelector('#rate-step-psych .primary-btn').disabled = !model.isFilled(entry.psych?.[model.id]);
+  document.querySelector('#rate-step-state .primary-btn').disabled = !isStateFilled(entry.state);
   METRICS.forEach((m) => {
     document.querySelector(`#rate-step-${m.field} .primary-btn`).disabled = !entry[m.field];
   });
@@ -237,20 +240,25 @@ document.getElementById('rate-edit-btn').addEventListener('click', () => showRat
 function renderRateSummary() {
   const entry = getEntry(currentDate);
 
-  const psychEl = document.getElementById('summary-psych');
-  const model = psychModelForEntry(entry);
-  psychEl.innerHTML = '';
-  if (model) {
-    const info = model.summary(entry.psych[model.id]);
-    psychEl.innerHTML = `
-      <div class="stat-label"></div>
-      <div class="summary-psych-title"><span class="summary-dot"></span><span class="summary-psych-name"></span></div>
-      <div class="summary-psych-details"></div>`;
-    psychEl.querySelector('.stat-label').textContent = `Психологічно · ${model.name}`;
-    psychEl.querySelector('.summary-dot').style.background = info.color;
-    psychEl.querySelector('.summary-psych-name').textContent = info.title;
-    psychEl.querySelector('.summary-psych-details').textContent = info.details.join(' · ');
+  const stateEl = document.getElementById('summary-state');
+  stateEl.innerHTML = '';
+  if (isStateFilled(entry.state)) {
+    const zone = CIRCUMPLEX_ZONES[entry.state.zone];
+    const { v, a } = stateScores(entry.state);
+    stateEl.innerHTML = `
+      ${stateMiniMap(entry.state)}
+      <div class="summary-state-info">
+        <div class="stat-label">Психологічно</div>
+        <div class="summary-state-title"></div>
+        <div class="summary-state-words"></div>
+        <div class="summary-state-scores">Приємність <b>${formatScore(v)}</b> · Енергія <b>${formatScore(a)}</b></div>
+      </div>`;
+    const title = stateEl.querySelector('.summary-state-title');
+    title.textContent = zone.name;
+    title.style.color = zone.text;
+    stateEl.querySelector('.summary-state-words').textContent = entry.state.words.join(' · ');
   }
+
   const scores = document.getElementById('summary-scores');
   scores.innerHTML = '';
   METRICS.forEach((m) => {
@@ -275,35 +283,10 @@ function renderRateSummary() {
 
 // ---------- Психологічний стан ----------
 
-function renderModelSwitch() {
-  const container = document.getElementById('model-switch');
-  const active = getPsychModel();
-  container.innerHTML = '';
-  PSYCH_MODELS.forEach((model) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.setAttribute('role', 'tab');
-    btn.className = 'model-btn' + (model === active ? ' active' : '');
-    btn.textContent = model.name;
-    btn.addEventListener('click', () => {
-      setPsychModel(model.id);
-      model.resetScreen?.(getEntry(currentDate).psych?.[model.id]);
-      renderModelSwitch();
-      renderPsych();
-      updateStepButtons();
-    });
-    container.appendChild(btn);
-  });
-}
-
-function renderPsych() {
-  const model = getPsychModel();
-  const body = document.getElementById('psych-body');
-  const data = getEntry(currentDate).psych?.[model.id];
-  model.render(body, data, (next, options = {}) => {
-    const psych = { ...(getEntry(currentDate).psych || {}), [model.id]: next };
-    updateEntry(currentDate, { psych });
-    if (!options.silent) renderPsych();
+function renderStateStep() {
+  renderState(document.getElementById('state-body'), getEntry(currentDate).state, (state) => {
+    updateEntry(currentDate, { state });
+    renderStateStep();
     updateStepButtons();
   });
 }
@@ -505,8 +488,13 @@ function renderHistory() {
     item.className = 'history-item';
 
     const scores = METRICS.map((m) => findLevel(m, entry[m.field])?.emoji).filter(Boolean).join(' ');
-    const psychModel = psychModelForEntry(entry);
-    const psychText = psychModel ? psychModel.historyText(entry.psych[psychModel.id]) : '';
+    let stateText = '';
+    if (isStateFilled(entry.state)) {
+      const zone = CIRCUMPLEX_ZONES[entry.state.zone];
+      const { v, a } = stateScores(entry.state);
+      const words = entry.state.words.length ? entry.state.words.join(', ') : zone.name;
+      stateText = `${zone.dot} ${words}  ·  ${formatScore(v)} / ${formatScore(a)}`;
+    }
 
     const gratitude = (entry.gratitude || []).filter((g) => g.trim());
     const thoughts = entry.thoughts || [];
@@ -521,12 +509,12 @@ function renderHistory() {
         <span class="history-date"></span>
         <span class="history-scores"></span>
       </div>
-      ${psychText ? '<div class="history-psych"></div>' : ''}
+      ${stateText ? '<div class="history-state"></div>' : ''}
       ${preview ? '<div class="history-preview"></div>' : ''}
     `;
     item.querySelector('.history-date').textContent = formatShortDate(date);
     item.querySelector('.history-scores').textContent = [scores, counts].filter(Boolean).join('   ');
-    if (psychText) item.querySelector('.history-psych').textContent = psychText;
+    if (stateText) item.querySelector('.history-state').textContent = stateText;
     if (preview) item.querySelector('.history-preview').textContent = preview;
 
     item.addEventListener('click', () => {
@@ -571,16 +559,13 @@ function currentStreak() {
   return streak;
 }
 
-// Приємність стану дня від 0 до 1 — з тієї моделі, якою його оцінили
-function entryValenceShare(entry) {
-  const model = entry && psychModelForEntry(entry);
-  return model ? (model.valence(entry.psych[model.id]) + 1) / 2 : null;
+function periodStateScores(periodEntries) {
+  return periodEntries.filter((e) => isStateFilled(e.state)).map((e) => stateScores(e.state));
 }
 
-function pleasantShare(periodEntries) {
-  const shares = periodEntries.map(entryValenceShare).filter((v) => v != null);
-  if (!shares.length) return '—';
-  return `${Math.round((shares.filter((v) => v > 0.5).length / shares.length) * 100)}%`;
+// Бал стану (-5…+5) як частка від 0 до 1 — для графіка
+function stateShare(entry, key) {
+  return entry && isStateFilled(entry.state) ? (stateScores(entry.state)[key] + CIRCUMPLEX_RANGE) / (2 * CIRCUMPLEX_RANGE) : null;
 }
 
 function renderStats() {
@@ -589,13 +574,18 @@ function renderStats() {
   const gratitudeCount = periodEntries.reduce((sum, e) => sum + (e.gratitude || []).filter((g) => g.trim()).length, 0);
 
   const fmt = (v, max) => (v == null ? '—' : `${v.toFixed(1)}<span class="stat-max">/${max}</span>`);
+  const fmtScore = (v) => (v == null ? '—' : formatScore(Math.round(v * 10) / 10));
+  const scores = periodStateScores(periodEntries);
+  const pleasant = scores.length ? `${Math.round((scores.filter((s) => s.v > 0).length / scores.length) * 100)}%` : '—';
 
   const tiles = [
+    { value: fmtScore(average(scores.map((s) => s.v))), label: 'Середня приємність' },
+    { value: fmtScore(average(scores.map((s) => s.a))), label: 'Середня енергія' },
     ...METRICS.map((m) => ({
       value: fmt(average(periodEntries.map((e) => e[m.field]).filter(Boolean)), m.levels.length),
       label: m.label,
     })),
-    { value: pleasantShare(periodEntries), label: 'Приємних днів' },
+    { value: pleasant, label: 'Приємних днів' },
     { value: `${periodEntries.length}/${statsDays}`, label: 'Днів із записами' },
     { value: `${currentStreak()} 🔥`, label: 'Днів поспіль' },
     { value: gratitudeCount, label: 'Подяк за період' },
@@ -677,7 +667,8 @@ function drawChart(dates) {
     const max = metric.levels.length;
     drawSeries(styles.getPropertyValue(metric.color).trim(), (entry) => (entry?.[metric.field] ? (entry[metric.field] - 1) / (max - 1) : null));
   });
-  drawSeries(styles.getPropertyValue('--accent').trim(), entryValenceShare);
+  drawSeries(styles.getPropertyValue('--accent-warm').trim(), (entry) => stateShare(entry, 'a'));
+  drawSeries(styles.getPropertyValue('--accent').trim(), (entry) => stateShare(entry, 'v'));
 }
 
 window.addEventListener('resize', () => {
@@ -753,7 +744,7 @@ function mergeEntries(existing, incoming) {
   return {
     ...existing,
     ...Object.fromEntries(METRICS.map((m) => [m.field, existing[m.field] || incoming[m.field] || null])),
-    psych: { ...(incoming.psych || {}), ...(existing.psych || {}) },
+    state: existing.state || incoming.state || null,
     rated: Boolean(existing.rated || incoming.rated),
     gratitude: unique([...(existing.gratitude || []), ...(incoming.gratitude || [])].filter((g) => g.trim())),
     thoughts,

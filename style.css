@@ -368,9 +368,12 @@ main {
 
 .rate-summary-score .scale-emoji { font-size: 1.8rem; }
 
-.summary-psych:empty { display: none; }
+.summary-state:empty { display: none; }
 
-.summary-psych {
+.summary-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -378,28 +381,27 @@ main {
   margin-bottom: 10px;
 }
 
-.summary-psych-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.cx-map { flex: 0 0 auto; }
+
+.summary-state-title {
   font-weight: 600;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
-.summary-dot {
-  flex: 0 0 auto;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.summary-psych-details {
-  color: var(--text-dim);
+.summary-state-words {
   font-size: 0.85rem;
+  margin-top: 2px;
+}
+
+.summary-state-words:empty { display: none; }
+
+.summary-state-scores {
+  color: var(--text-dim);
+  font-size: 0.8rem;
   margin-top: 4px;
 }
 
-.summary-psych-details:empty { display: none; }
+.summary-state-scores b { color: var(--text); }
 
 .summary-text {
   font-size: 0.9rem;
@@ -613,7 +615,7 @@ main {
 }
 
 
-.history-psych {
+.history-state {
   margin-top: 6px;
   font-size: 0.85rem;
 }
@@ -772,34 +774,6 @@ main {
   margin-bottom: 8px;
 }
 
-/* ---------- Перемикач моделей психологічного стану ---------- */
-
-.model-switch {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 3px;
-  margin-bottom: 14px;
-}
-
-.model-btn {
-  background: transparent;
-  border: none;
-  border-radius: 7px;
-  padding: 6px 4px;
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  cursor: pointer;
-}
-
-.model-btn.active {
-  background: var(--accent-dim);
-  color: var(--text);
-}
-
 /* ---------- Циркумплекс ---------- */
 
 .cx-grid {
@@ -912,123 +886,16 @@ main {
   color: var(--zone-text, var(--text));
 }
 
-/* ---------- PAD ---------- */
-
-.pad-sliders {
+.cx-scores {
   display: flex;
-  flex-direction: column;
   gap: 16px;
-  margin-bottom: 14px;
-}
-
-.pad-row-head {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  margin-bottom: 6px;
-}
-
-.pad-value { color: var(--accent); }
-
-.pad-row-ends {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  margin-top: 4px;
-}
-
-.pad-range {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 8px;
-  border-radius: 4px;
-  outline: none;
-  margin: 8px 0;
-}
-
-.pad-p { background: linear-gradient(90deg, #E24B4A, #4a4a4a 50%, #1D9E75); }
-.pad-a { background: linear-gradient(90deg, #378ADD, #4a4a4a 50%, #EF9F27); }
-.pad-d { background: linear-gradient(90deg, #6b6b6b, #4a4a4a 50%, #9b7dff); }
-
-.pad-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid var(--bg-card);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
-  cursor: pointer;
-}
-
-.pad-range::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid var(--bg-card);
-  cursor: pointer;
-}
-
-.pad-result {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  margin-top: 14px;
+  padding: 8px 12px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px 12px;
-}
-
-.pad-result.empty { opacity: 0.6; }
-
-.pad-emoji { font-size: 2rem; line-height: 1; }
-.pad-name { font-weight: 600; }
-.pad-hint { font-size: 0.8rem; color: var(--text-dim); }
-
-/* ---------- Колесо Плутчика ---------- */
-
-.pl-wheel {
-  display: block;
-  width: 100%;
-  max-width: 320px;
-  margin: 0 auto 10px;
-}
-
-.pl-seg {
-  stroke: var(--bg-card);
-  stroke-width: 1.5;
-  cursor: pointer;
-  transition: fill-opacity 0.15s;
-}
-
-.pl-seg.active {
-  stroke: #fff;
-  stroke-width: 2.5;
-}
-
-.pl-label {
-  font-size: 9px;
-  font-weight: 600;
-  text-anchor: middle;
-  dominant-baseline: central;
-  pointer-events: none;
-}
-
-.pl-chip {
-  border: none;
-  border-radius: 999px;
-  padding: 6px 12px;
   font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
+  color: var(--text-dim);
 }
 
-.pl-empty { text-align: center; }
-
-.pl-dyads {
-  margin: 8px 0 0;
-  color: var(--text);
-}
+.cx-scores b { color: var(--text); }
