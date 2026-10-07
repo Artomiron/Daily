@@ -3,17 +3,6 @@
 const APP_VERSION = 'v1.2';
 const STORAGE_ENTRIES = 'daily-entries';
 
-const MENTAL_LEVELS = [
-  { value: 1, emoji: '😩', text: 'Виснажено' },
-  { value: 2, emoji: '😢', text: 'Пригнічено' },
-  { value: 3, emoji: '😰', text: 'Тривожно' },
-  { value: 4, emoji: '😣', text: 'Напружено' },
-  { value: 5, emoji: '😐', text: 'Рівно' },
-  { value: 6, emoji: '😌', text: 'Спокійно' },
-  { value: 7, emoji: '😊', text: 'Радісно' },
-  { value: 8, emoji: '🤩', text: 'Піднесено' },
-];
-
 const PHYSICAL_LEVELS = [
   { value: 1, emoji: '🤒', text: 'Хворію' },
   { value: 2, emoji: '🤕', text: 'Болить' },
@@ -25,19 +14,9 @@ const PHYSICAL_LEVELS = [
   { value: 8, emoji: '💪', text: 'Чудово' },
 ];
 
-const ENERGY_LEVELS = [
-  { value: 1, emoji: '🪫', text: 'Нуль' },
-  { value: 2, emoji: '🥱', text: 'Мало' },
-  { value: 3, emoji: '🔋', text: 'Норм' },
-  { value: 4, emoji: '💪', text: 'Багато' },
-  { value: 5, emoji: '⚡', text: 'Максимум' },
-];
-
-// Шкали оцінки дня — у порядку кроків
+// Шкали оцінки дня (психологічний стан — окремо, у psych.js)
 const METRICS = [
-  { field: 'mental', label: 'Психологічний стан', short: 'Психологічно', levels: MENTAL_LEVELS, color: '--accent' },
   { field: 'physical', label: 'Фізичний стан', short: 'Фізично', levels: PHYSICAL_LEVELS, color: '--accent-green' },
-  { field: 'energy', label: 'Енергія', short: 'Енергія', levels: ENERGY_LEVELS, color: '--accent-warm' },
 ];
 
 function findLevel(metric, value) {
@@ -57,11 +36,10 @@ function loadEntries() {
   }
 }
 
-// Старий «настрій» за шкалою 1–5 переносимо в психологічний стан 1–8
+// Старі шкали (настрій, психологічний стан 1–8, енергія) замінені моделями з psych.js.
+// Їхні значення лишаються в записі, але більше не показуються
 function migrateEntries(data) {
   Object.values(data).forEach((entry) => {
-    if (entry.mood && !entry.mental) entry.mental = Math.round(1 + ((entry.mood - 1) * 7) / 4);
-    delete entry.mood;
     delete entry.emotions;
   });
   return data;
@@ -75,12 +53,13 @@ function saveEntries() {
 
 function isEntryEmpty(entry) {
   return !METRICS.some((m) => entry[m.field])
+    && !Object.values(entry.psych || {}).some(Boolean)
     && !(entry.thoughts || []).length
     && !(entry.gratitude || []).some((g) => g.trim());
 }
 
 function getEntry(date) {
-  return entries[date] || { mental: null, physical: null, energy: null, rated: false, gratitude: [], thoughts: [] };
+  return entries[date] || { psych: {}, physical: null, rated: false, gratitude: [], thoughts: [] };
 }
 
 function updateEntry(date, changes) {
@@ -188,6 +167,7 @@ function renderToday() {
   document.getElementById('go-today').hidden = isToday;
 
   METRICS.forEach(renderScale);
+  renderModelSwitch();
   renderGratitude(entry.gratitude || []);
   showRateStep(entry.rated ? 'summary' : 'intro');
   renderThoughts(entry.thoughts || []);
@@ -196,7 +176,7 @@ function renderToday() {
 
 // ---------- Оцінити день ----------
 
-const RATE_STEPS = [...METRICS.map((m) => m.field), 'gratitude'];
+const RATE_STEPS = ['psych', ...METRICS.map((m) => m.field), 'gratitude'];
 
 function showRateStep(step) {
   RATE_STEPS.forEach((s) => {
@@ -204,6 +184,10 @@ function showRateStep(step) {
   });
   document.getElementById('rate-intro').hidden = step !== 'intro';
   document.getElementById('rate-summary').hidden = step !== 'summary';
+  if (step === 'psych') {
+    getPsychModel().resetScreen?.(getEntry(currentDate).psych?.[getPsychModel().id]);
+    renderPsych();
+  }
 
   const progress = document.getElementById('rate-progress');
   if (step === 'intro') {
@@ -222,6 +206,8 @@ function showRateStep(step) {
 
 function updateStepButtons() {
   const entry = getEntry(currentDate);
+  const model = getPsychModel();
+  document.querySelector('#rate-step-psych .primary-btn').disabled = !model.isFilled(entry.psych?.[model.id]);
   METRICS.forEach((m) => {
     document.querySelector(`#rate-step-${m.field} .primary-btn`).disabled = !entry[m.field];
   });
@@ -250,13 +236,28 @@ document.getElementById('rate-edit-btn').addEventListener('click', () => showRat
 
 function renderRateSummary() {
   const entry = getEntry(currentDate);
+
+  const psychEl = document.getElementById('summary-psych');
+  const model = psychModelForEntry(entry);
+  psychEl.innerHTML = '';
+  if (model) {
+    const info = model.summary(entry.psych[model.id]);
+    psychEl.innerHTML = `
+      <div class="stat-label"></div>
+      <div class="summary-psych-title"><span class="summary-dot"></span><span class="summary-psych-name"></span></div>
+      <div class="summary-psych-details"></div>`;
+    psychEl.querySelector('.stat-label').textContent = `Психологічно · ${model.name}`;
+    psychEl.querySelector('.summary-dot').style.background = info.color;
+    psychEl.querySelector('.summary-psych-name').textContent = info.title;
+    psychEl.querySelector('.summary-psych-details').textContent = info.details.join(' · ');
+  }
   const scores = document.getElementById('summary-scores');
   scores.innerHTML = '';
   METRICS.forEach((m) => {
     const level = findLevel(m, entry[m.field]);
     const tile = document.createElement('div');
     tile.className = 'rate-summary-score';
-    tile.innerHTML = '<span class="scale-emoji"></span><div class="stat-label"></div><div class="summary-text"></div>';
+    tile.innerHTML = '<span class="scale-emoji"></span><div><div class="stat-label"></div><div class="summary-text"></div></div>';
     tile.querySelector('.scale-emoji').textContent = level ? level.emoji : '—';
     tile.querySelector('.stat-label').textContent = m.short;
     tile.querySelector('.summary-text').textContent = level ? level.text : '';
@@ -269,6 +270,41 @@ function renderRateSummary() {
     const li = document.createElement('li');
     li.textContent = g;
     list.appendChild(li);
+  });
+}
+
+// ---------- Психологічний стан ----------
+
+function renderModelSwitch() {
+  const container = document.getElementById('model-switch');
+  const active = getPsychModel();
+  container.innerHTML = '';
+  PSYCH_MODELS.forEach((model) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('role', 'tab');
+    btn.className = 'model-btn' + (model === active ? ' active' : '');
+    btn.textContent = model.name;
+    btn.addEventListener('click', () => {
+      setPsychModel(model.id);
+      model.resetScreen?.(getEntry(currentDate).psych?.[model.id]);
+      renderModelSwitch();
+      renderPsych();
+      updateStepButtons();
+    });
+    container.appendChild(btn);
+  });
+}
+
+function renderPsych() {
+  const model = getPsychModel();
+  const body = document.getElementById('psych-body');
+  const data = getEntry(currentDate).psych?.[model.id];
+  model.render(body, data, (next, options = {}) => {
+    const psych = { ...(getEntry(currentDate).psych || {}), [model.id]: next };
+    updateEntry(currentDate, { psych });
+    if (!options.silent) renderPsych();
+    updateStepButtons();
   });
 }
 
@@ -469,6 +505,8 @@ function renderHistory() {
     item.className = 'history-item';
 
     const scores = METRICS.map((m) => findLevel(m, entry[m.field])?.emoji).filter(Boolean).join(' ');
+    const psychModel = psychModelForEntry(entry);
+    const psychText = psychModel ? psychModel.historyText(entry.psych[psychModel.id]) : '';
 
     const gratitude = (entry.gratitude || []).filter((g) => g.trim());
     const thoughts = entry.thoughts || [];
@@ -483,10 +521,12 @@ function renderHistory() {
         <span class="history-date"></span>
         <span class="history-scores"></span>
       </div>
+      ${psychText ? '<div class="history-psych"></div>' : ''}
       ${preview ? '<div class="history-preview"></div>' : ''}
     `;
     item.querySelector('.history-date').textContent = formatShortDate(date);
     item.querySelector('.history-scores').textContent = [scores, counts].filter(Boolean).join('   ');
+    if (psychText) item.querySelector('.history-psych').textContent = psychText;
     if (preview) item.querySelector('.history-preview').textContent = preview;
 
     item.addEventListener('click', () => {
@@ -531,6 +571,18 @@ function currentStreak() {
   return streak;
 }
 
+// Приємність стану дня від 0 до 1 — з тієї моделі, якою його оцінили
+function entryValenceShare(entry) {
+  const model = entry && psychModelForEntry(entry);
+  return model ? (model.valence(entry.psych[model.id]) + 1) / 2 : null;
+}
+
+function pleasantShare(periodEntries) {
+  const shares = periodEntries.map(entryValenceShare).filter((v) => v != null);
+  if (!shares.length) return '—';
+  return `${Math.round((shares.filter((v) => v > 0.5).length / shares.length) * 100)}%`;
+}
+
 function renderStats() {
   const dates = periodDates(statsDays);
   const periodEntries = dates.map((d) => entries[d]).filter(Boolean);
@@ -543,6 +595,7 @@ function renderStats() {
       value: fmt(average(periodEntries.map((e) => e[m.field]).filter(Boolean)), m.levels.length),
       label: m.label,
     })),
+    { value: pleasantShare(periodEntries), label: 'Приємних днів' },
     { value: `${periodEntries.length}/${statsDays}`, label: 'Днів із записами' },
     { value: `${currentStreak()} 🔥`, label: 'Днів поспіль' },
     { value: gratitudeCount, label: 'Подяк за період' },
@@ -575,7 +628,7 @@ function drawChart(dates) {
   const plotW = width - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
   const x = (i) => pad.left + (dates.length === 1 ? plotW / 2 : (i / (dates.length - 1)) * plotW);
-  // Шкали різної довжини (1–8 і 1–5), тому малюємо частку від найгіршого до найкращого
+  // Шкали різні, тому малюємо частку від найгіршого до найкращого
   const y = (share) => pad.top + plotH - share * plotH;
 
   ctx.font = '11px -apple-system, sans-serif';
@@ -598,18 +651,15 @@ function drawChart(dates) {
     ctx.fillText(`${date.getDate()}.${String(date.getMonth() + 1).padStart(2, '0')}`, x(i), height - pad.bottom + 8);
   });
 
-  const drawSeries = (metric) => {
-    const color = styles.getPropertyValue(metric.color).trim();
-    const max = metric.levels.length;
+  const drawSeries = (color, shareAt) => {
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     let prev = null;
     dates.forEach((d, i) => {
-      const value = entries[d]?.[metric.field];
-      if (!value) return;
-      const v = (value - 1) / (max - 1);
+      const v = shareAt(entries[d]);
+      if (v == null) return;
       if (prev) {
         ctx.beginPath();
         ctx.moveTo(x(prev.i), y(prev.v));
@@ -623,7 +673,11 @@ function drawChart(dates) {
     });
   };
 
-  [...METRICS].reverse().forEach(drawSeries);
+  METRICS.forEach((metric) => {
+    const max = metric.levels.length;
+    drawSeries(styles.getPropertyValue(metric.color).trim(), (entry) => (entry?.[metric.field] ? (entry[metric.field] - 1) / (max - 1) : null));
+  });
+  drawSeries(styles.getPropertyValue('--accent').trim(), entryValenceShare);
 }
 
 window.addEventListener('resize', () => {
@@ -699,6 +753,7 @@ function mergeEntries(existing, incoming) {
   return {
     ...existing,
     ...Object.fromEntries(METRICS.map((m) => [m.field, existing[m.field] || incoming[m.field] || null])),
+    psych: { ...(incoming.psych || {}), ...(existing.psych || {}) },
     rated: Boolean(existing.rated || incoming.rated),
     gratitude: unique([...(existing.gratitude || []), ...(incoming.gratitude || [])].filter((g) => g.trim())),
     thoughts,

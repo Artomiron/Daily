@@ -57,13 +57,13 @@
           </div>
         </div>
         <p class="intro-title">Як пройшов твій день?</p>
-        <p class="card-hint intro-hint">Чотири короткі кроки: психологічний стан, фізичний стан, енергія та вдячність</p>
+        <p class="card-hint intro-hint">Три короткі кроки: психологічний стан, фізичний стан та вдячність</p>
         <button type="button" id="rate-start-btn" class="primary-btn intro-start">Почати</button>
       </div>
 
-      <div id="rate-step-mental" class="rate-step" hidden>
-        <p class="step-question">Як я почуваюсь психологічно?</p>
-        <div id="mental-scale" class="scale scale-8"></div>
+      <div id="rate-step-psych" class="rate-step" hidden>
+        <div class="model-switch" id="model-switch" role="tablist" aria-label="Модель оцінки"></div>
+        <div id="psych-body"></div>
         <div class="step-actions">
           <button type="button" class="secondary-btn" data-next-step="intro">← Назад</button>
           <button type="button" class="primary-btn" data-next-step="physical" disabled>Далі</button>
@@ -74,16 +74,7 @@
         <p class="step-question">Як я почуваюсь фізично?</p>
         <div id="physical-scale" class="scale scale-8"></div>
         <div class="step-actions">
-          <button type="button" class="secondary-btn" data-next-step="mental">← Назад</button>
-          <button type="button" class="primary-btn" data-next-step="energy" disabled>Далі</button>
-        </div>
-      </div>
-
-      <div id="rate-step-energy" class="rate-step" hidden>
-        <p class="step-question">Скільки в мене сьогодні енергії?</p>
-        <div id="energy-scale" class="scale"></div>
-        <div class="step-actions">
-          <button type="button" class="secondary-btn" data-next-step="physical">← Назад</button>
+          <button type="button" class="secondary-btn" data-next-step="psych">← Назад</button>
           <button type="button" class="primary-btn" data-next-step="gratitude" disabled>Далі</button>
         </div>
       </div>
@@ -93,12 +84,13 @@
         <div id="gratitude-list" class="gratitude-list"></div>
         <button type="button" id="add-gratitude-btn" class="text-btn">+ Ще одне</button>
         <div class="step-actions">
-          <button type="button" class="secondary-btn" data-next-step="energy">← Назад</button>
+          <button type="button" class="secondary-btn" data-next-step="physical">← Назад</button>
           <button type="button" id="rate-done-btn" class="primary-btn" disabled>Готово</button>
         </div>
       </div>
 
       <div id="rate-summary" class="rate-summary" hidden>
+        <div id="summary-psych" class="summary-psych"></div>
         <div id="summary-scores" class="rate-summary-scores"></div>
         <div class="stat-label">🙏 Вдячність</div>
         <ul id="summary-gratitude" class="summary-gratitude"></ul>
@@ -131,9 +123,8 @@
     <div class="card">
       <h2 class="card-title">Стан по днях</h2>
       <div class="chart-legend">
-        <span><i class="dot dot-mental"></i>Психологічний</span>
-        <span><i class="dot dot-physical"></i>Фізичний</span>
-        <span><i class="dot dot-energy"></i>Енергія</span>
+        <span><i class="dot dot-mental"></i>Приємність стану</span>
+        <span><i class="dot dot-physical"></i>Фізичний стан</span>
       </div>
       <canvas id="stats-chart" height="220"></canvas>
     </div>
@@ -169,6 +160,7 @@
   </div>
 </section>
 
+<script src="psych.js?v=1.2"></script>
 <script src="app.js?v=1.2"></script>
 </body>
 </html>
