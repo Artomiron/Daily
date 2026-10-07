@@ -170,6 +170,9 @@ function showRateStep(step) {
   });
   document.getElementById('rate-intro').hidden = step !== 'intro';
   document.getElementById('rate-summary').hidden = step !== 'summary';
+  // Під час проходження кроків панель вибору дня ховаємо, щоб не відволікала
+  document.getElementById('tab-today').classList.toggle('rating', RATE_STEPS.includes(step));
+  if (RATE_STEPS.includes(step)) window.scrollTo(0, 0);
   if (step === 'state') {
     resetStateScreen(getEntry(currentDate).state);
     renderStateStep();

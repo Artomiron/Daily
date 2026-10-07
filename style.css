@@ -181,6 +181,10 @@ main {
   color-scheme: dark;
 }
 
+.rating .date-controls { display: none; }
+
+.rating .date-label { margin-top: 0; }
+
 .date-label {
   color: var(--text-dim);
   margin: 10px 2px 14px;
