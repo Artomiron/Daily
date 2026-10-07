@@ -42,12 +42,13 @@ function saveEntries() {
 function isEntryEmpty(entry) {
   return !entry.state
     && !entry.body
+    && !entry.factors
     && !(entry.thoughts || []).length
     && !(entry.gratitude || []).some((g) => g.trim());
 }
 
 function getEntry(date) {
-  return entries[date] || { state: null, body: null, rated: false, gratitude: [], thoughts: [] };
+  return entries[date] || { state: null, body: null, factors: null, rated: false, gratitude: [], thoughts: [] };
 }
 
 function updateEntry(date, changes) {
@@ -157,7 +158,7 @@ function renderToday() {
 
 // ---------- Оцінити день ----------
 
-const RATE_STEPS = ['state', 'body', 'gratitude'];
+const RATE_STEPS = ['state', 'body', 'factors', 'gratitude'];
 
 function showRateStep(step) {
   RATE_STEPS.forEach((s) => {
@@ -173,6 +174,7 @@ function showRateStep(step) {
     renderStateStep();
   }
   if (step === 'body') renderBodyStep();
+  if (step === 'factors') renderFactorsStep();
 
   const progress = document.getElementById('rate-progress');
   if (step === 'intro') {
@@ -193,6 +195,7 @@ function updateStepButtons() {
   const entry = getEntry(currentDate);
   document.querySelector('#rate-step-state .primary-btn').disabled = !isStateFilled(entry.state);
   document.querySelector('#rate-step-body .primary-btn').disabled = !isBodyFilled(entry.body);
+  document.querySelector('#rate-step-factors .primary-btn').disabled = !isFactorsFilled(entry.factors);
   document.getElementById('rate-done-btn').disabled = !(entry.gratitude || []).some((g) => g.trim());
 }
 
@@ -256,6 +259,19 @@ function renderRateSummary() {
     });
   }
 
+  const factorsEl = document.getElementById('summary-factors');
+  factorsEl.innerHTML = '';
+  if (isFactorsFilled(entry.factors)) {
+    factorsEl.innerHTML = `
+      <div>
+        <div class="stat-label">Що вплинуло</div>
+        <div class="summary-factor-items"></div>
+        <div class="summary-factor-why"></div>
+      </div>`;
+    factorsEl.querySelector('.summary-factor-items').textContent = entry.factors.items.map(factorLabel).join(' · ');
+    factorsEl.querySelector('.summary-factor-why').textContent = entry.factors.why?.trim() || '';
+  }
+
   const list = document.getElementById('summary-gratitude');
   list.innerHTML = '';
   (entry.gratitude || []).filter((g) => g.trim()).forEach((g) => {
@@ -281,6 +297,16 @@ function renderBodyStep() {
   renderBody(document.getElementById('body-form'), getEntry(currentDate).body, (body) => {
     updateEntry(currentDate, { body });
     renderBodyStep();
+    updateStepButtons();
+  });
+}
+
+// ---------- Що вплинуло ----------
+
+function renderFactorsStep() {
+  renderFactors(document.getElementById('factors-form'), getEntry(currentDate).factors, (factors, options = {}) => {
+    updateEntry(currentDate, { factors });
+    if (!options.silent) renderFactorsStep();
     updateStepButtons();
   });
 }
@@ -524,6 +550,33 @@ function renderStats() {
     .join('');
 
   drawChart(dates);
+  renderFactorStats(periodEntries);
+}
+
+function renderFactorStats(periodEntries) {
+  const container = document.getElementById('stats-factors');
+  const stats = factorStats(periodEntries);
+  if (!stats.length) {
+    container.innerHTML = '<p class="card-hint">Тут з\'являться фактори, які найчастіше впливають на ваші дні, — щойно ви оціните кілька днів.</p>';
+    return;
+  }
+  container.innerHTML = '';
+  stats.forEach((s) => {
+    const factor = findFactor(s.id);
+    const v = average(s.valences);
+    const row = document.createElement('div');
+    row.className = 'factor-stat-row';
+    row.innerHTML = `
+      <span class="factor-stat-name"></span>
+      <span class="factor-stat-counts"><span class="up">👍 ${s.up}</span><span class="down">👎 ${s.down}</span></span>
+      <span class="factor-stat-v" title="Середня приємність у ці дні">${v == null ? '—' : formatScore(Math.round(v * 10) / 10)}</span>`;
+    row.querySelector('.factor-stat-name').textContent = `${factor.emoji} ${factor.name}`;
+    container.appendChild(row);
+  });
+  const hint = document.createElement('p');
+  hint.className = 'card-hint factor-stat-hint';
+  hint.textContent = 'Праворуч — середня приємність стану в дні з цим фактором';
+  container.appendChild(hint);
 }
 
 function drawChart(dates) {
@@ -670,6 +723,7 @@ function mergeEntries(existing, incoming) {
   return {
     ...existing,
     body: existing.body || incoming.body || null,
+    factors: existing.factors || incoming.factors || null,
     state: existing.state || incoming.state || null,
     rated: Boolean(existing.rated || incoming.rated),
     gratitude: unique([...(existing.gratitude || []), ...(incoming.gratitude || [])].filter((g) => g.trim())),

@@ -60,7 +60,7 @@
           </div>
         </div>
         <p class="intro-title">Як пройшов твій день?</p>
-        <p class="card-hint intro-hint">Три короткі кроки: психологічний стан, фізичний стан та вдячність</p>
+        <p class="card-hint intro-hint">Чотири короткі кроки: психологічний стан, фізичний стан, що вплинуло на день та вдячність</p>
         <button type="button" id="rate-start-btn" class="primary-btn intro-start">Почати</button>
       </div>
 
@@ -76,6 +76,14 @@
         <div id="body-form"></div>
         <div class="step-actions">
           <button type="button" class="secondary-btn" data-next-step="state">← Назад</button>
+          <button type="button" class="primary-btn" data-next-step="factors" disabled>Далі</button>
+        </div>
+      </div>
+
+      <div id="rate-step-factors" class="rate-step" hidden>
+        <div id="factors-form"></div>
+        <div class="step-actions">
+          <button type="button" class="secondary-btn" data-next-step="body">← Назад</button>
           <button type="button" class="primary-btn" data-next-step="gratitude" disabled>Далі</button>
         </div>
       </div>
@@ -85,7 +93,7 @@
         <div id="gratitude-list" class="gratitude-list"></div>
         <button type="button" id="add-gratitude-btn" class="text-btn">+ Ще одне</button>
         <div class="step-actions">
-          <button type="button" class="secondary-btn" data-next-step="body">← Назад</button>
+          <button type="button" class="secondary-btn" data-next-step="factors">← Назад</button>
           <button type="button" id="rate-done-btn" class="primary-btn" disabled>Готово</button>
         </div>
       </div>
@@ -93,6 +101,7 @@
       <div id="rate-summary" class="rate-summary" hidden>
         <div id="summary-state" class="summary-state"></div>
         <div id="summary-body" class="summary-state summary-body"></div>
+        <div id="summary-factors" class="summary-state summary-factors"></div>
         <div class="stat-label">🙏 Вдячність</div>
         <ul id="summary-gratitude" class="summary-gratitude"></ul>
         <button type="button" id="rate-edit-btn" class="text-btn">Змінити</button>
@@ -116,6 +125,10 @@
         <span><i class="dot dot-physical"></i>Індекс тіла</span>
       </div>
       <canvas id="stats-chart" height="220"></canvas>
+    </div>
+    <div class="card">
+      <h2 class="card-title">Що впливає на мої дні</h2>
+      <div id="stats-factors" class="stats-factors"></div>
     </div>
   </section>
 </main>
@@ -167,6 +180,7 @@
 
 <script src="circumplex.js?v=1.2"></script>
 <script src="body.js?v=1.2"></script>
+<script src="factors.js?v=1.2"></script>
 <script src="app.js?v=1.2"></script>
 </body>
 </html>
