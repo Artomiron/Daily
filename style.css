@@ -782,6 +782,10 @@ main {
   grid-template-rows: auto auto auto;
   gap: 20px 16px;
   align-items: center;
+  /* Квадрат, осі й підписи — одним блоком по центру на будь-якій ширині */
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
 }
 
 .cx-label {
@@ -816,7 +820,6 @@ main {
   grid-template-rows: 1fr 1fr;
   gap: 12px;
   aspect-ratio: 1 / 1;
-  max-height: 340px;
 }
 
 /* Осі через центр зі стрілками на кінцях */
