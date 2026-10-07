@@ -100,10 +100,6 @@ function formatLongDate(s) {
   return formatDate(s, 'long');
 }
 
-function formatShortDate(s) {
-  return capitalize(formatDate(s, 'short'));
-}
-
 function nowTime() {
   return new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
 }
@@ -117,7 +113,6 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === `tab-${tab}`));
-  if (tab === 'history') renderHistory();
   if (tab === 'stats') renderStats();
   window.scrollTo(0, 0);
 }
@@ -437,83 +432,6 @@ function flashSaved() {
   el.textContent = 'Збережено ✓';
   clearTimeout(savedTimer);
   savedTimer = setTimeout(() => { el.textContent = ''; }, 1500);
-}
-
-// ---------- Історія ----------
-
-document.getElementById('history-search').addEventListener('input', renderHistory);
-
-function entrySearchText(entry) {
-  return [
-    ...(entry.thoughts || []).map((t) => t.text),
-    ...(entry.gratitude || []),
-  ].join(' ').toLowerCase();
-}
-
-function renderHistory() {
-  const container = document.getElementById('history-list');
-  const query = document.getElementById('history-search').value.trim().toLowerCase();
-  const dates = Object.keys(entries).sort().reverse()
-    .filter((d) => !query || entrySearchText(entries[d]).includes(query));
-
-  container.innerHTML = '';
-  if (!dates.length) {
-    container.innerHTML = `<div class="empty-state">${query ? 'Нічого не знайдено' : 'Поки що записів немає.<br>Почніть з вкладки «Сьогодні» ✍️'}</div>`;
-    return;
-  }
-
-  dates.forEach((date) => {
-    const entry = entries[date];
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'history-item';
-
-    let bodyText = '';
-    if (isBodyFilled(entry.body)) {
-      const b = entry.body;
-      bodyText = [
-        `🫀 ${bodyIndex(b)}/100`,
-        b.pain ? `біль ${b.pain}` : 'без болю',
-        `сон ${b.sleepHours != null ? formatHours(b.sleepHours) : findBodyLevel(BODY_SLEEP_QUALITY, b.sleepQuality).text.toLowerCase()}`,
-      ].join(' · ');
-    }
-    let stateText = '';
-    if (isStateFilled(entry.state)) {
-      const zone = CIRCUMPLEX_ZONES[entry.state.zone];
-      const { v, a } = stateScores(entry.state);
-      const words = entry.state.words.length ? entry.state.words.join(', ') : zone.name;
-      stateText = `${zone.dot} ${words}  ·  ${formatScore(v)} / ${formatScore(a)}`;
-    }
-
-    const gratitude = (entry.gratitude || []).filter((g) => g.trim());
-    const thoughts = entry.thoughts || [];
-    const preview = thoughts.length ? thoughts[0].text : gratitude.length ? `🙏 ${gratitude.join(' · ')}` : '';
-    const counts = [
-      gratitude.length && `🙏 ${gratitude.length}`,
-      thoughts.length && `💭 ${thoughts.length}`,
-    ].filter(Boolean).join('  ');
-
-    item.innerHTML = `
-      <div class="history-head">
-        <span class="history-date"></span>
-        <span class="history-scores"></span>
-      </div>
-      ${stateText ? '<div class="history-state"></div>' : ''}
-      ${bodyText ? '<div class="history-state history-body"></div>' : ''}
-      ${preview ? '<div class="history-preview"></div>' : ''}
-    `;
-    item.querySelector('.history-date').textContent = formatShortDate(date);
-    item.querySelector('.history-scores').textContent = counts;
-    if (stateText) item.querySelector('.history-state').textContent = stateText;
-    if (bodyText) item.querySelector('.history-body').textContent = bodyText;
-    if (preview) item.querySelector('.history-preview').textContent = preview;
-
-    item.addEventListener('click', () => {
-      setDate(date);
-      switchTab('today');
-    });
-    container.appendChild(item);
-  });
 }
 
 // ---------- Статистика ----------
