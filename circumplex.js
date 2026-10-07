@@ -119,17 +119,22 @@ function renderStateZones(el, state, onChange) {
   el.innerHTML = `
     <p class="step-question">Як я почуваюсь психологічно?</p>
     <p class="card-hint">Оберіть зону, найближчу до стану</p>
-    <div class="cx-grid">
-      <div class="cx-axis cx-axis-v">більше енергії ↑</div>
-      <div class="cx-zones"></div>
-      <div class="cx-axis cx-axis-h">приємніше →</div>
+    <div class="cx-board">
+      <div class="cx-label cx-label-top">⚡ Більше енергії</div>
+      <div class="cx-label cx-label-left"><span>Неприємно</span></div>
+      <div class="cx-zones">
+        <div class="cx-axis-line cx-axis-v" aria-hidden="true"></div>
+        <div class="cx-axis-line cx-axis-h" aria-hidden="true"></div>
+      </div>
+      <div class="cx-label cx-label-right"><span>Приємно</span></div>
+      <div class="cx-label cx-label-bottom">🪫 Менше енергії</div>
     </div>`;
   const zones = el.querySelector('.cx-zones');
   ['red', 'yellow', 'blue', 'green'].forEach((key) => {
     const zone = CIRCUMPLEX_ZONES[key];
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'cx-zone' + (state?.zone === key ? ' active' : '');
+    btn.className = `cx-zone cx-zone-${key}` + (state?.zone === key ? ' active' : '');
     setZoneVars(btn, zone);
     btn.innerHTML = `<b>${zone.name}</b><span>${zone.hint}</span>`;
     btn.addEventListener('click', () => {

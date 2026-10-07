@@ -776,37 +776,82 @@ main {
 
 /* ---------- Циркумплекс ---------- */
 
-.cx-grid {
+.cx-board {
   display: grid;
-  grid-template-columns: 18px 1fr;
-  grid-template-rows: auto 18px;
-  gap: 6px;
+  grid-template-columns: 18px 1fr 18px;
+  grid-template-rows: auto auto auto;
+  gap: 20px 16px;
+  align-items: center;
 }
 
-.cx-axis {
-  font-size: 0.7rem;
-  color: var(--text-dim);
+.cx-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cx-label-top { grid-area: 1 / 2; }
+.cx-label-left { grid-area: 2 / 1; }
+.cx-zones { grid-area: 2 / 2; }
+.cx-label-right { grid-area: 2 / 3; }
+.cx-label-bottom { grid-area: 3 / 2; }
+
+.cx-label-left,
+.cx-label-right {
   display: flex;
-  align-items: center;
   justify-content: center;
 }
 
-.cx-axis-v {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-}
+.cx-label-left span,
+.cx-label-right span { writing-mode: vertical-rl; }
 
-.cx-axis-h { grid-column: 2; }
+.cx-label-left span { transform: rotate(180deg); }
 
 .cx-zones {
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
-  gap: 6px;
+  gap: 12px;
   aspect-ratio: 1 / 1;
   max-height: 340px;
 }
+
+/* Осі через центр зі стрілками на кінцях */
+.cx-axis-line {
+  position: absolute;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+}
+
+.cx-axis-v {
+  left: calc(50% - 1px);
+  top: -6px;
+  bottom: -6px;
+  width: 2px;
+}
+
+.cx-axis-h {
+  top: calc(50% - 1px);
+  left: -6px;
+  right: -6px;
+  height: 2px;
+}
+
+.cx-axis-line::before,
+.cx-axis-line::after {
+  content: "";
+  position: absolute;
+  border: 6px solid transparent;
+}
+
+.cx-axis-v::before { top: -10px; left: -5px; border-bottom: 9px solid rgba(255, 255, 255, 0.6); border-top: 0; }
+.cx-axis-v::after { bottom: -10px; left: -5px; border-top: 9px solid rgba(255, 255, 255, 0.6); border-bottom: 0; }
+.cx-axis-h::before { left: -10px; top: -5px; border-right: 9px solid rgba(255, 255, 255, 0.6); border-left: 0; }
+.cx-axis-h::after { right: -10px; top: -5px; border-left: 9px solid rgba(255, 255, 255, 0.6); border-right: 0; }
 
 .cx-zone {
   display: flex;
@@ -823,6 +868,10 @@ main {
   cursor: pointer;
 }
 
+.cx-zone-red { justify-content: flex-start; }
+.cx-zone-yellow { justify-content: flex-start; align-items: flex-end; text-align: right; }
+.cx-zone-green { align-items: flex-end; text-align: right; }
+
 .cx-zone b { font-size: 0.95rem; }
 .cx-zone span { font-size: 0.7rem; opacity: 0.85; }
 
@@ -833,10 +882,11 @@ main {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 64px;
-  height: 64px;
+  z-index: 2;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  border: 2px solid var(--border);
+  border: 2px solid rgba(255, 255, 255, 0.6);
   background: var(--bg-card);
   color: var(--text-dim);
   font-size: 0.75rem;
