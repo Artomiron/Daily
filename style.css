@@ -219,12 +219,61 @@ main {
 }
 
 .rate-header {
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
-  min-height: 1.2em;
+  gap: 10px;
+  min-height: 34px;
   margin-bottom: 6px;
 }
 
-.rate-header:has(.rate-progress:empty) { display: none; }
+.thoughts-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.thoughts-btn:hover { background: var(--bg-card-hover); }
+
+.thoughts-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.rating .thoughts-btn { display: none; }
+
+/* Блок оцінки дня — на всю висоту між шапкою та нижніми вкладками */
+#tab-today.active {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 168px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+.rate-card {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.rate-intro:not([hidden]) {
+  flex: 1 1 auto;
+  justify-content: center;
+}
 
 .step-question {
   font-size: 1.05rem;
@@ -569,12 +618,29 @@ main {
 }
 
 .save-status {
-  text-align: center;
+  position: fixed;
+  left: 50%;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 8px);
+  z-index: 300;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   color: var(--text-dim);
   font-size: 0.8rem;
-  min-height: 1.2em;
-  margin: 4px 0 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
 }
+
+.save-status.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+#thoughts-modal .card { margin-bottom: 18px; }
 
 /* ---------- Статистика ---------- */
 

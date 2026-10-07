@@ -37,9 +37,12 @@
     </div>
     <p id="date-label" class="date-label"></p>
 
-    <div class="card">
-      <div class="card-title-row rate-header">
+    <div id="rate-card" class="card rate-card">
+      <div class="rate-header">
         <span id="rate-progress" class="rate-progress"></span>
+        <button type="button" id="open-thoughts-btn" class="thoughts-btn" title="Думки за цей день">
+          💭 Думки<span id="thoughts-count" class="thoughts-count" hidden></span>
+        </button>
       </div>
 
       <div id="rate-intro" class="rate-intro">
@@ -96,14 +99,6 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2 class="card-title">💭 Думки</h2>
-      <div id="thoughts-list" class="thoughts-list"></div>
-      <textarea id="thought-input" rows="3" placeholder="Що в голові?"></textarea>
-      <button type="button" id="add-thought-btn" class="primary-btn">Додати думку</button>
-    </div>
-
-    <p id="save-status" class="save-status"></p>
   </section>
 
   <section id="tab-stats" class="tab-panel">
@@ -129,6 +124,23 @@
   <button class="tab-btn active" data-tab="today"><span class="tab-icon">✍️</span><span>Сьогодні</span></button>
   <button class="tab-btn" data-tab="stats"><span class="tab-icon">📊</span><span>Статистика</span></button>
 </nav>
+
+<p id="save-status" class="save-status" aria-live="polite"></p>
+
+<section id="thoughts-modal" class="app-modal" hidden>
+  <div class="app-modal-inner">
+    <div class="app-modal-header">
+      <button type="button" class="app-modal-back" data-close-modal="thoughts-modal">← Назад</button>
+      <h2 class="app-modal-title">💭 Думки</h2>
+    </div>
+    <p id="thoughts-date" class="app-modal-hint"></p>
+    <div class="card">
+      <textarea id="thought-input" rows="4" placeholder="Що в голові?"></textarea>
+      <button type="button" id="add-thought-btn" class="primary-btn">Додати думку</button>
+    </div>
+    <div id="thoughts-list" class="thoughts-list"></div>
+  </div>
+</section>
 
 <section id="settings-modal" class="app-modal" hidden>
   <div class="app-modal-inner">

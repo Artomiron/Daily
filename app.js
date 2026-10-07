@@ -152,7 +152,7 @@ function renderToday() {
   renderGratitude(entry.gratitude || []);
   showRateStep(entry.rated ? 'summary' : 'intro');
   renderThoughts(entry.thoughts || []);
-  document.getElementById('save-status').textContent = '';
+  document.getElementById('save-status').classList.remove('visible');
 }
 
 // ---------- Оцінити день ----------
@@ -351,8 +351,10 @@ const thoughtsList = document.getElementById('thoughts-list');
 const thoughtInput = document.getElementById('thought-input');
 
 function renderThoughts(thoughts) {
+  updateThoughtsButton(thoughts.length);
   thoughtsList.innerHTML = '';
-  thoughts.forEach((thought) => {
+  // Найновіші зверху, одразу під полем вводу
+  [...thoughts].reverse().forEach((thought) => {
     const item = document.createElement('div');
     item.className = 'thought';
 
@@ -413,6 +415,21 @@ function startEditThought(item, textEl, thought) {
   area.addEventListener('blur', finish, { once: true });
 }
 
+function updateThoughtsButton(count) {
+  const badge = document.getElementById('thoughts-count');
+  badge.hidden = !count;
+  badge.textContent = count;
+}
+
+document.getElementById('open-thoughts-btn').addEventListener('click', () => {
+  const isToday = currentDate === todayISO();
+  document.getElementById('thoughts-date').textContent = isToday
+    ? `Сьогодні, ${formatLongDate(currentDate)}`
+    : capitalize(formatLongDate(currentDate));
+  renderThoughts(getEntry(currentDate).thoughts || []);
+  document.getElementById('thoughts-modal').hidden = false;
+});
+
 document.getElementById('add-thought-btn').addEventListener('click', () => {
   const text = thoughtInput.value.trim();
   if (!text) {
@@ -430,8 +447,9 @@ let savedTimer = null;
 function flashSaved() {
   const el = document.getElementById('save-status');
   el.textContent = 'Збережено ✓';
+  el.classList.add('visible');
   clearTimeout(savedTimer);
-  savedTimer = setTimeout(() => { el.textContent = ''; }, 1500);
+  savedTimer = setTimeout(() => el.classList.remove('visible'), 1500);
 }
 
 // ---------- Статистика ----------
