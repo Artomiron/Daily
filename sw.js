@@ -4,6 +4,7 @@ const APP_SHELL = [
   './index.html',
   './style.css',
   './circumplex.js',
+  './body.js',
   './app.js',
   './manifest.json',
   './icons/icon-192.png',
