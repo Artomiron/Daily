@@ -671,7 +671,7 @@ document.getElementById('open-settings-btn').addEventListener('click', () => {
 });
 
 document.getElementById('export-btn').addEventListener('click', async () => {
-  const data = { app: 'daily', version: APP_VERSION, exportedAt: new Date().toISOString(), entries, tasks: taskStore };
+  const data = { app: 'daily', version: APP_VERSION, exportedAt: new Date().toISOString(), entries, tasks: taskStore, shop: shopStore };
   const json = JSON.stringify(data, null, 2);
   const fileName = `daily-backup-${todayISO()}.json`;
   const file = new File([json], fileName, { type: 'application/json' });
@@ -716,6 +716,10 @@ importFile.addEventListener('change', async () => {
     if (data.tasks) {
       taskStore = mergeTaskStores(taskStore, data.tasks);
       saveTasks();
+    }
+    if (data.shop) {
+      shopStore = mergeShopStores(shopStore, data.shop);
+      saveShop();
     }
     renderToday();
     renderTasks();

@@ -2003,3 +2003,426 @@ main {
   .star-fill::after, .star-popup-rays, .star-popup-star, .star-popup-count { animation: none; }
   .star-widget.star-gain .star-shape, .star-widget.star-complete .star-shape { animation: none; }
 }
+
+/* ---------- Шапка «Задач»: компактний вибір дня + магазин ---------- */
+
+.tasks-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-controls.compact {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.date-controls.compact input[type="date"] {
+  flex: 0 1 150px;
+  width: 150px;
+}
+
+.shop-btn {
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 194, 51, 0.35);
+  background: linear-gradient(135deg, rgba(255, 213, 74, 0.18), rgba(255, 159, 28, 0.12));
+  cursor: pointer;
+}
+
+.shop-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: #FFC233;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shop-btn:active { transform: scale(0.94); }
+
+/* ---------- Магазин ---------- */
+
+#shop-modal .app-modal-inner { padding-bottom: 90px; }
+
+.shop-archive-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shop-archive-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shop-balance {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 213, 74, 0.16), rgba(255, 159, 28, 0.08));
+  border: 1px solid rgba(255, 194, 51, 0.3);
+}
+
+.shop-balance-star {
+  width: 48px;
+  height: 48px;
+  fill: #FFC233;
+  filter: drop-shadow(0 0 10px rgba(255, 194, 51, 0.55));
+}
+
+.shop-balance-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #FFD54A;
+}
+
+.shop-balance-label {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.shop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.shop-item-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.shop-item-emoji {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #262626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+}
+
+.shop-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.shop-item-title {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.shop-item-cost {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #FFC233;
+}
+
+.shop-buy-btn {
+  flex: 0 0 auto;
+  min-width: 84px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 19px;
+  border: 1px solid rgba(255, 194, 51, 0.35);
+  background: transparent;
+  color: var(--text-dim);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.shop-item.affordable .shop-buy-btn {
+  background: linear-gradient(135deg, #FFD54A, #FF9F1C);
+  border-color: transparent;
+  color: #3d2600;
+}
+
+.shop-buy-btn.confirming {
+  background: linear-gradient(135deg, #5fd3a0, #2fae7a) !important;
+  color: #062b1c !important;
+}
+
+.shop-buy-btn:active { transform: scale(0.95); }
+
+.shop-empty-icon { font-size: 2.2rem; }
+
+.shop-toolbar {
+  bottom: 0;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+.shop-new-btn {
+  background: linear-gradient(135deg, #FFD54A, #FF9F1C);
+  color: #3d2600;
+  box-shadow: 0 6px 20px rgba(255, 159, 28, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.emoji-picker {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.emoji-btn {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: var(--bg);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.emoji-btn.active {
+  border-color: #FFC233;
+  background: rgba(255, 194, 51, 0.12);
+}
+
+.shop-cost-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.shop-cost-value {
+  min-width: 70px;
+  text-align: center;
+  font-size: 1.4rem;
+  color: #FFC233;
+}
+
+/* Архів */
+.archive-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.archive-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 2px;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.archive-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.archive-title { font-weight: 600; }
+
+.archive-date {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.archive-cost {
+  font-weight: 700;
+  color: #FFC233;
+  white-space: nowrap;
+}
+
+/* Попап покупки: щасливий — подарунок відкривається */
+.gift {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 84px;
+  height: 84px;
+  transform: translate(-50%, -40%);
+}
+
+.gift-box {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 0;
+  height: 46px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, transparent 42%, #FFD54A 42% 58%, transparent 58%), linear-gradient(135deg, #a78bff, #7a5cf0);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.gift-lid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 44px;
+  height: 16px;
+  border-radius: 6px;
+  z-index: 2;
+  background: linear-gradient(90deg, transparent 42%, #FFE58A 42% 58%, transparent 58%), linear-gradient(135deg, #b9a1ff, #8466f0);
+  animation: gift-lid 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) 0.35s both;
+}
+
+.gift-item {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  z-index: 1;
+  font-size: 2.6rem;
+  line-height: 1;
+  transform: translate(-50%, 0) scale(0.3);
+  opacity: 0;
+  animation: gift-item 0.9s cubic-bezier(0.3, 1.6, 0.5, 1) 0.6s both;
+}
+
+@keyframes gift-lid {
+  0% { transform: translateY(0) rotate(0); }
+  20% { transform: translateY(2px) rotate(0); }
+  100% { transform: translate(34px, -46px) rotate(38deg); }
+}
+
+@keyframes gift-item {
+  from { transform: translate(-50%, 20px) scale(0.3); opacity: 0; }
+  to { transform: translate(-50%, -34px) scale(1); opacity: 1; }
+}
+
+/* Попап покупки: сумний — зірка зі сльозою */
+.shop-popup.sad .star-popup-card {
+  background: linear-gradient(180deg, #1c2230, var(--bg-card) 55%);
+  border-color: rgba(120, 150, 210, 0.35);
+}
+
+.shop-popup.sad .star-popup-title { color: #b8c9ec; }
+
+.shop-popup.sad .star-popup-btn {
+  background: #3a4258;
+  color: var(--text);
+  box-shadow: none;
+}
+
+.sad-star {
+  position: absolute;
+  inset: 14px;
+  width: calc(100% - 28px);
+  height: calc(100% - 28px);
+  animation: sad-droop 2.6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+.sad-star-body {
+  fill: #6f7c99;
+  stroke: #8d9bbb;
+  stroke-width: 0.5;
+  stroke-linejoin: round;
+}
+
+.sad-eye { fill: #2a3145; }
+
+.sad-mouth {
+  fill: none;
+  stroke: #2a3145;
+  stroke-width: 0.7;
+  stroke-linecap: round;
+}
+
+.sad-tear {
+  position: absolute;
+  left: 41%;
+  top: 50%;
+  width: 7px;
+  height: 10px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: #7fb4ff;
+  animation: sad-tear 1.8s ease-in 0.5s infinite;
+  opacity: 0;
+}
+
+@keyframes sad-droop {
+  0%, 100% { transform: rotate(-4deg) translateY(0); }
+  50% { transform: rotate(4deg) translateY(4px); }
+}
+
+@keyframes sad-tear {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  15% { opacity: 1; transform: translateY(0) scale(1); }
+  80% { opacity: 0.9; }
+  100% { transform: translateY(46px) scale(0.9); opacity: 0; }
+}
+
+.shop-popup.sad .star-popup-card { animation: popup-in 0.5s cubic-bezier(0.3, 1.5, 0.5, 1), sad-shake 0.5s ease-in-out 0.5s; }
+
+@keyframes sad-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift-lid, .gift-item, .sad-star, .sad-tear, .shop-popup.sad .star-popup-card { animation: none; }
+  .gift-item { opacity: 1; transform: translate(-50%, -34px); }
+  .gift-lid { transform: translate(34px, -46px) rotate(38deg); }
+}
+
+.tasks-date-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tasks-date-row .date-label { margin-right: auto; }
+
+.link-btn {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.link-btn[hidden] { display: none; }

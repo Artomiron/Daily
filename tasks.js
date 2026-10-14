@@ -368,12 +368,13 @@ let starAnimating = false;
 function renderStarWidget(options = {}) {
   const points = starPoints();
   const inProgress = options.full ? STAR_GOAL : points % STAR_GOAL;
-  const total = options.full ? Math.floor(points / STAR_GOAL) - 1 : Math.floor(points / STAR_GOAL);
+  // Лічильник — баланс: зароблені зірки мінус витрачені в магазині
+  const total = Math.max(0, starBalance() - (options.full ? 1 : 0));
   starWidget.querySelector('.star-fill').style.height = `${STAR_FILL_HEIGHTS[inProgress]}%`;
   starWidget.classList.toggle('is-full', inProgress === STAR_GOAL);
   document.getElementById('star-progress-text').textContent = `${inProgress}/${STAR_GOAL}`;
   document.getElementById('star-total').textContent = total;
-  starWidget.setAttribute('aria-label', `Зірка: ${inProgress} з ${STAR_GOAL}. Зібрано зірок: ${total}`);
+  starWidget.setAttribute('aria-label', `Зірка: ${inProgress} з ${STAR_GOAL}. Зірок на балансі: ${total}`);
 }
 
 function pulse(el, className) {
@@ -509,7 +510,7 @@ function showStarPopup(totalStars) {
   document.getElementById('star-popup-title').textContent = STAR_PHRASES[Math.floor(Math.random() * STAR_PHRASES.length)];
   document.getElementById('star-popup-text').textContent = totalStars === 1
     ? 'Ви зібрали свою першу зірку! П\'ять зіркових справ — і небо стає яскравішим.'
-    : `У вашій колекції вже ${totalStars} ${pluralStars(totalStars)}. Продовжуйте — наступна вже чекає!`;
+    : `Зібрано вже ${totalStars} ${pluralStars(totalStars)}, на балансі ${starBalance()} ★. Витратьте в магазині або копіть далі!`;
   document.getElementById('star-popup-count').textContent = totalStars;
   starPopup.hidden = false;
   document.getElementById('star-popup-btn').focus();
@@ -521,6 +522,7 @@ function closeStarPopup() {
   // Зірка порожніє для наступного кола, лічильник зростає
   renderStarWidget();
   pulse(document.getElementById('star-total-wrap'), 'star-total-bump');
+  if (!document.getElementById('shop-modal').hidden) renderShop();
 }
 
 document.getElementById('star-popup-btn').addEventListener('click', closeStarPopup);
