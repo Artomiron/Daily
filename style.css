@@ -620,7 +620,7 @@ main {
 .save-status {
   position: fixed;
   left: 50%;
-  bottom: calc(116px + env(safe-area-inset-bottom));
+  bottom: calc(130px + env(safe-area-inset-bottom));
   transform: translate(-50%, 8px);
   z-index: 300;
   margin: 0;
@@ -1446,7 +1446,7 @@ main {
 
 :root { --tabbar-h: 52px; }
 
-#tab-tasks { padding-bottom: 60px; }
+#tab-tasks { padding-bottom: 76px; }
 
 .tasks-toolbar {
   position: fixed;
@@ -1454,44 +1454,48 @@ main {
   right: 0;
   bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
   z-index: 40;
-  padding: 0 max(16px, env(safe-area-inset-left));
-  background: rgba(18, 18, 18, 0.82);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  backdrop-filter: blur(20px) saturate(160%);
-  border-top: 0.5px solid var(--border);
+  display: flex;
+  justify-content: center;
+  padding: 28px max(16px, env(safe-area-inset-left)) 12px;
+  /* Список плавно зникає під кнопкою замість жорсткої смуги */
+  background: linear-gradient(to bottom, rgba(18, 18, 18, 0), var(--bg) 55%);
+  pointer-events: none;
 }
 
 .task-new-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  max-width: 720px;
-  min-height: 50px;
-  margin: 0 auto;
-  padding: 0;
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 1.06rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.task-new-btn:active { opacity: 0.6; }
-
-.task-new-plus {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+  pointer-events: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
-  font-weight: 500;
-  line-height: 1;
+  gap: 8px;
+  width: 100%;
+  max-width: 340px;
+  height: 50px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 25px;
+  background: linear-gradient(135deg, #a78bff, #8466f0);
+  color: #fff;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 20px rgba(132, 102, 240, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.task-new-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 3px 10px rgba(132, 102, 240, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.task-new-plus {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
 }
 
 .tasks-empty {
