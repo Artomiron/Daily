@@ -473,12 +473,16 @@ document.getElementById('add-thought-btn').addEventListener('click', () => {
 });
 
 let savedTimer = null;
-function flashSaved() {
+function showToast(text, duration = 1500) {
   const el = document.getElementById('save-status');
-  el.textContent = 'Збережено ✓';
+  el.textContent = text;
   el.classList.add('visible');
   clearTimeout(savedTimer);
-  savedTimer = setTimeout(() => el.classList.remove('visible'), 1500);
+  savedTimer = setTimeout(() => el.classList.remove('visible'), duration);
+}
+
+function flashSaved() {
+  showToast('Збережено ✓');
 }
 
 // ---------- Статистика ----------

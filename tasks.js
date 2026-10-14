@@ -1,5 +1,9 @@
 // Задачі на день: разові або з повтором (щодня, по буднях, у вибрані дні тижня, кожні N днів).
-// Сховище: { tasks: [{ id, title, start, repeat, until, createdAt }], done: { date: [id] }, skipped: { date: [id] } }
+// Задача буває звичайною або зірковою (star: true): кожні STAR_GOAL виконаних зіркових задач
+// дають одну зірку. Прогрес зірки спільний для всіх днів і не скидається з кінцем дня.
+// Сховище: { tasks: [{ id, title, star, start, repeat, until, createdAt }], done: { date: [id] },
+//            skipped: { date: [id] }, starDone: { date: [id] } }
+// starDone — зараховані виконання зіркових задач; лишаються, навіть якщо задачу потім видалити.
 
 const STORAGE_TASKS = 'daily-tasks';
 
@@ -20,13 +24,24 @@ const WEEKDAYS = [
 const INTERVAL_MIN = 2;
 const INTERVAL_MAX = 30;
 
+const STAR_GOAL = 5;
+
+const STAR_PHRASES = [
+  'Мрії стають ближчими! ✨',
+  'Ще одна зірка у вашому небі! 🌟',
+  'Крок за кроком — до великої мети! 🚀',
+  'Ви сяєте! Так тримати! 💫',
+  'Всесвіт помічає ваші зусилля! 🌌',
+  'Зірки сходяться на вашу користь! ⭐',
+];
+
 function loadTasks() {
   try {
     const raw = localStorage.getItem(STORAGE_TASKS);
     const data = raw ? JSON.parse(raw) : {};
-    return { tasks: data.tasks || [], done: data.done || {}, skipped: data.skipped || {} };
+    return { tasks: data.tasks || [], done: data.done || {}, skipped: data.skipped || {}, starDone: data.starDone || {} };
   } catch {
-    return { tasks: [], done: {}, skipped: {} };
+    return { tasks: [], done: {}, skipped: {}, starDone: {} };
   }
 }
 
@@ -34,6 +49,10 @@ let taskStore = loadTasks();
 
 function saveTasks() {
   localStorage.setItem(STORAGE_TASKS, JSON.stringify(taskStore));
+}
+
+function starPoints() {
+  return Object.values(taskStore.starDone).reduce((sum, ids) => sum + ids.length, 0);
 }
 
 function daysBetween(from, to) {
@@ -168,6 +187,7 @@ function renderTasks() {
     : `Виконано ${doneCount} з ${tasks.length}`;
   progress.querySelector('.tasks-progress-fill').style.width = tasks.length ? `${(doneCount / tasks.length) * 100}%` : '0';
   progress.classList.toggle('complete', tasks.length > 0 && doneCount === tasks.length);
+  if (!starAnimating) renderStarWidget();
 
   const list = document.getElementById('task-list');
   list.innerHTML = '';
@@ -179,11 +199,11 @@ function renderTasks() {
   tasks.forEach((task) => {
     const done = isTaskDone(task, currentDate);
     const row = document.createElement('div');
-    row.className = 'task' + (done ? ' done' : '');
+    row.className = 'task' + (done ? ' done' : '') + (task.star ? ' star' : '');
     row.innerHTML = `
       <button type="button" class="task-check" role="checkbox" aria-checked="${done}">${CHECK_SVG}</button>
       <button type="button" class="task-body">
-        <span class="task-title"><span></span></span>
+        <span class="task-title">${task.star ? '<i class="task-star" aria-label="Зіркова задача">★</i>' : ''}<span></span></span>
         <span class="task-meta"></span>
       </button>`;
     row.querySelector('.task-title span').textContent = task.title;
@@ -224,6 +244,15 @@ function toggleTask(task, row, checkEl) {
   else done.delete(task.id);
   taskStore.done[date] = [...done];
   if (!taskStore.done[date].length) delete taskStore.done[date];
+
+  // Зіркові бали: зараховуємо при відмітці, повертаємо при знятті відмітки
+  const pointsBefore = starPoints();
+  const starDone = new Set(taskStore.starDone[date] || []);
+  if (nowDone && task.star) starDone.add(task.id);
+  if (!nowDone) starDone.delete(task.id);
+  taskStore.starDone[date] = [...starDone];
+  if (!taskStore.starDone[date].length) delete taskStore.starDone[date];
+  const pointsAfter = starPoints();
   saveTasks();
 
   row.classList.toggle('done', nowDone);
@@ -235,8 +264,9 @@ function toggleTask(task, row, checkEl) {
   }
 
   row.classList.add('just-done');
-  burstFrom(checkEl);
+  burstFrom(checkEl, task.star ? STAR_COLORS : FX_COLORS);
   if (navigator.vibrate) navigator.vibrate(12);
+  if (pointsAfter > pointsBefore) animateStarGain(checkEl, pointsAfter);
 
   const all = tasksForDate(date);
   const allDone = all.length && all.every((t) => isTaskDone(t, date));
@@ -266,7 +296,7 @@ function fxLayer() {
 }
 
 // Невеликий феєрверк з чекбокса
-function burstFrom(el) {
+function burstFrom(el, colors = FX_COLORS) {
   if (prefersReducedMotion()) return;
   const rect = el.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
@@ -280,7 +310,7 @@ function burstFrom(el) {
     p.style.height = `${Math.random() < 0.5 ? size : size * 0.45}px`;
     p.style.left = `${cx}px`;
     p.style.top = `${cy}px`;
-    p.style.background = FX_COLORS[i % FX_COLORS.length];
+    p.style.background = colors[i % colors.length];
     layer.appendChild(p);
     const angle = (Math.PI * 2 * i) / 16 + Math.random() * 0.4;
     const dist = 32 + Math.random() * 38;
@@ -295,6 +325,8 @@ function burstFrom(el) {
 
 // Конфеті-дощ, коли виконано всі задачі дня
 function celebrateAllDone() {
+  // Якщо саме зараз святкуємо зірку — не перекриваємо її попап
+  if (starAnimating) return;
   const banner = document.getElementById('tasks-celebrate');
   banner.classList.remove('show');
   void banner.offsetWidth;
@@ -322,6 +354,185 @@ function celebrateAllDone() {
   }
 }
 
+// ---------- Зірка прогресу ----------
+
+const STAR_COLORS = ['#FFD54A', '#FFB627', '#FF9F1C', '#FFE89A', '#ffffff'];
+const starWidget = document.getElementById('star-widget');
+let starAnimating = false;
+
+function renderStarWidget(options = {}) {
+  const points = starPoints();
+  const inProgress = options.full ? STAR_GOAL : points % STAR_GOAL;
+  const total = options.full ? Math.floor(points / STAR_GOAL) - 1 : Math.floor(points / STAR_GOAL);
+  // Зірка займає не весь квадрат: від 10.8% до 85.4% висоти, тож прогрес рахуємо в її межах
+  const STAR_BOTTOM = 14.6;
+  const STAR_HEIGHT = 74.6;
+  starWidget.querySelector('.star-fill').style.height = inProgress
+    ? `${STAR_BOTTOM + (inProgress / STAR_GOAL) * STAR_HEIGHT}%`
+    : '0';
+  starWidget.classList.toggle('has-progress', inProgress > 0);
+  document.getElementById('star-progress-text').textContent = `${inProgress}/${STAR_GOAL}`;
+  document.getElementById('star-total').textContent = total;
+  starWidget.setAttribute('aria-label', `Зірка: ${inProgress} з ${STAR_GOAL}. Зібрано зірок: ${total}`);
+}
+
+function pulse(el, className) {
+  el.classList.remove(className);
+  void el.offsetWidth;
+  el.classList.add(className);
+}
+
+// Золота зірочка летить з чекбокса до великої зірки, потім та заповнюється
+function animateStarGain(fromEl, points) {
+  const completesStar = points % STAR_GOAL === 0;
+  starAnimating = true;
+  const arrive = () => {
+    renderStarWidget({ full: completesStar });
+    pulse(starWidget, 'star-gain');
+    floatPlusOne();
+    if (completesStar) {
+      setTimeout(() => celebrateStar(points / STAR_GOAL), 850);
+    } else {
+      starAnimating = false;
+    }
+  };
+
+  if (prefersReducedMotion()) {
+    arrive();
+    return;
+  }
+
+  const from = fromEl.getBoundingClientRect();
+  const to = starWidget.getBoundingClientRect();
+  const flyer = document.createElement('span');
+  flyer.className = 'star-flyer';
+  flyer.textContent = '★';
+  flyer.style.left = `${from.left + from.width / 2}px`;
+  flyer.style.top = `${from.top + from.height / 2}px`;
+  fxLayer().appendChild(flyer);
+  const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+  const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+  flyer.animate([
+    { transform: 'translate(-50%, -50%) scale(0.6) rotate(0deg)', opacity: 0 },
+    { transform: `translate(calc(-50% + ${dx * 0.35}px), calc(-50% + ${dy * 0.35 - 40}px)) scale(1.4) rotate(140deg)`, opacity: 1, offset: 0.4 },
+    { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.5) rotate(288deg)`, opacity: 0.9 },
+  ], { duration: 650, easing: 'cubic-bezier(0.5, 0, 0.6, 1)' }).onfinish = () => {
+    flyer.remove();
+    arrive();
+  };
+}
+
+function floatPlusOne() {
+  if (prefersReducedMotion()) return;
+  const rect = starWidget.getBoundingClientRect();
+  const plus = document.createElement('span');
+  plus.className = 'star-plus';
+  plus.textContent = '+1';
+  plus.style.left = `${rect.left + rect.width / 2}px`;
+  plus.style.top = `${rect.top}px`;
+  fxLayer().appendChild(plus);
+  plus.animate([
+    { transform: 'translate(-50%, 0)', opacity: 0 },
+    { transform: 'translate(-50%, -14px)', opacity: 1, offset: 0.3 },
+    { transform: 'translate(-50%, -30px)', opacity: 0 },
+  ], { duration: 900, easing: 'ease-out' }).onfinish = () => plus.remove();
+}
+
+// Повна зірка: спалах, золоті промені й конфеті, попап з бадьорим текстом
+function celebrateStar(totalStars) {
+  pulse(starWidget, 'star-complete');
+  if (navigator.vibrate) navigator.vibrate([30, 50, 30, 50, 60]);
+
+  if (!prefersReducedMotion()) {
+    const rect = starWidget.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const layer = fxLayer();
+    for (let i = 0; i < 28; i++) {
+      const p = document.createElement('span');
+      p.className = 'fx-particle star-ray';
+      p.style.left = `${cx}px`;
+      p.style.top = `${cy}px`;
+      p.style.background = STAR_COLORS[i % STAR_COLORS.length];
+      layer.appendChild(p);
+      const angle = (Math.PI * 2 * i) / 28;
+      const dist = 70 + Math.random() * 60;
+      p.animate([
+        { transform: `translate(-50%, -50%) rotate(${(angle * 180) / Math.PI}deg) scaleX(0.3)`, opacity: 1 },
+        { transform: `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px)) rotate(${(angle * 180) / Math.PI}deg) scaleX(1)`, opacity: 0 },
+      ], { duration: 800 + Math.random() * 300, easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)' }).onfinish = () => p.remove();
+    }
+    goldenRain();
+  }
+
+  setTimeout(() => showStarPopup(totalStars), prefersReducedMotion() ? 0 : 450);
+}
+
+function goldenRain() {
+  const layer = fxLayer();
+  const width = window.innerWidth;
+  for (let i = 0; i < 60; i++) {
+    const p = document.createElement('span');
+    p.className = 'star-confetti';
+    p.textContent = i % 3 === 0 ? '★' : '';
+    if (i % 3) {
+      p.style.width = `${5 + Math.random() * 6}px`;
+      p.style.height = `${4 + Math.random() * 4}px`;
+      p.style.background = STAR_COLORS[i % STAR_COLORS.length];
+    } else {
+      p.style.color = STAR_COLORS[i % 4];
+      p.style.fontSize = `${10 + Math.random() * 10}px`;
+    }
+    p.style.left = `${Math.random() * width}px`;
+    p.style.top = '-16px';
+    layer.appendChild(p);
+    const drift = (Math.random() - 0.5) * 140;
+    const fall = window.innerHeight * (0.7 + Math.random() * 0.4);
+    p.animate([
+      { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
+      { transform: `translate(${drift}px, ${fall}px) rotate(${360 + Math.random() * 360}deg)`, opacity: 0 },
+    ], { duration: 1600 + Math.random() * 1000, delay: Math.random() * 400, easing: 'cubic-bezier(0.25, 0.4, 0.4, 1)' }).onfinish = () => p.remove();
+  }
+}
+
+function pluralStars(n) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'зірка';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'зірки';
+  return 'зірок';
+}
+
+const starPopup = document.getElementById('star-popup');
+
+function showStarPopup(totalStars) {
+  document.getElementById('star-popup-title').textContent = STAR_PHRASES[Math.floor(Math.random() * STAR_PHRASES.length)];
+  document.getElementById('star-popup-text').textContent = totalStars === 1
+    ? 'Ви зібрали свою першу зірку! П\'ять зіркових справ — і небо стає яскравішим.'
+    : `У вашій колекції вже ${totalStars} ${pluralStars(totalStars)}. Продовжуйте — наступна вже чекає!`;
+  document.getElementById('star-popup-count').textContent = totalStars;
+  starPopup.hidden = false;
+  document.getElementById('star-popup-btn').focus();
+}
+
+function closeStarPopup() {
+  starPopup.hidden = true;
+  starAnimating = false;
+  // Зірка порожніє для наступного кола, лічильник зростає
+  renderStarWidget();
+  pulse(document.getElementById('star-total-wrap'), 'star-total-bump');
+}
+
+document.getElementById('star-popup-btn').addEventListener('click', closeStarPopup);
+starPopup.addEventListener('click', (e) => {
+  if (e.target === starPopup) closeStarPopup();
+});
+
+starWidget.addEventListener('click', () => {
+  const left = STAR_GOAL - (starPoints() % STAR_GOAL);
+  showToast(`★ До нової зірки: ще ${left} з ${STAR_GOAL} зіркових задач`, 2600);
+});
+
 // ---------- Редагування задачі ----------
 
 const taskSheet = document.getElementById('task-sheet');
@@ -330,6 +541,22 @@ const sheetSaveBtn = document.getElementById('task-sheet-save');
 // null — створення нової задачі, інакше — редагування
 let sheetTask = null;
 let sheetRepeat = null;
+let sheetStar = false;
+
+function renderSheetType() {
+  document.querySelectorAll('#task-sheet-type .segment').forEach((btn) => {
+    const active = (btn.dataset.type === 'star') === sheetStar;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-checked', active);
+  });
+}
+
+document.querySelectorAll('#task-sheet-type .segment').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    sheetStar = btn.dataset.type === 'star';
+    renderSheetType();
+  });
+});
 
 function openTaskSheet(task) {
   sheetTask = task;
@@ -337,6 +564,8 @@ function openTaskSheet(task) {
   document.getElementById('task-sheet-heading').textContent = task ? 'Задача' : 'Нова задача';
   sheetSaveBtn.textContent = task ? 'Готово' : 'Додати';
   sheetTitleInput.value = task ? task.title : '';
+  sheetStar = Boolean(task?.star);
+  renderSheetType();
   updateSheetSave();
   renderSheetRepeat();
   if (task) renderSheetDelete(false);
@@ -437,11 +666,13 @@ function saveTaskSheet() {
   }
   if (sheetTask) {
     sheetTask.title = title;
+    sheetTask.star = sheetStar;
     sheetTask.repeat = sheetRepeat;
   } else {
     taskStore.tasks.push({
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       title,
+      star: sheetStar,
       start: currentDate,
       repeat: sheetRepeat,
       until: null,
@@ -475,5 +706,10 @@ function mergeTaskStores(existing, incoming) {
     });
     return result;
   };
-  return { tasks, done: mergeMap(existing.done, incoming.done), skipped: mergeMap(existing.skipped, incoming.skipped) };
+  return {
+    tasks,
+    done: mergeMap(existing.done, incoming.done),
+    skipped: mergeMap(existing.skipped, incoming.skipped),
+    starDone: mergeMap(existing.starDone, incoming.starDone),
+  };
 }
