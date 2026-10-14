@@ -122,15 +122,10 @@
       </button>
     </div>
     <div class="tasks-date-row">
-      <p id="tasks-date-label" class="date-label"></p>
-      <button id="tasks-today" class="link-btn" title="Повернутись до сьогодні">Сьогодні</button>
-    </div>
-
-    <div class="tasks-header">
-      <div id="tasks-progress" class="tasks-progress" hidden>
-        <div class="tasks-progress-text"></div>
-        <div class="tasks-progress-bar"><div class="tasks-progress-fill"></div></div>
-      </div>
+      <p class="tasks-date-text">
+        <span id="tasks-date-label"></span>
+        <button id="tasks-today" class="link-btn" title="Повернутись до сьогодні">Сьогодні</button>
+      </p>
       <button type="button" id="star-widget" class="star-widget">
         <span class="star-shape" aria-hidden="true">
           <span class="star-meter"><span class="star-fill"></span></span>
@@ -141,6 +136,13 @@
           <span id="star-total-wrap" class="star-total">★ <span id="star-total">0</span></span>
         </span>
       </button>
+    </div>
+
+    <div class="tasks-header">
+      <div id="tasks-progress" class="tasks-progress" hidden>
+        <div class="tasks-progress-text"></div>
+        <div class="tasks-progress-bar"><div class="tasks-progress-fill"></div></div>
+      </div>
     </div>
 
     <div id="task-list" class="task-list"></div>

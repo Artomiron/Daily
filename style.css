@@ -1643,7 +1643,7 @@ main {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin: 4px 2px 12px;
+  margin: 0 2px 12px;
 }
 
 .tasks-header .tasks-progress {
@@ -2025,13 +2025,13 @@ main {
 .shop-btn {
   flex: 0 0 auto;
   margin-left: auto;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  border-radius: 14px;
+  border-radius: var(--radius);
   border: 1px solid rgba(255, 194, 51, 0.35);
   background: linear-gradient(135deg, rgba(255, 213, 74, 0.18), rgba(255, 159, 28, 0.12));
   cursor: pointer;
@@ -2407,18 +2407,40 @@ main {
 
 .tasks-date-row {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 2px 12px;
 }
 
-.tasks-date-row .date-label { margin-right: auto; }
+/* Дата і «Сьогодні» — один текстовий рядок, переносяться разом */
+.tasks-date-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.tasks-date-text .link-btn {
+  display: inline;
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+/* «Сьогодні» — одразу після підпису дня, через крапку */
+.tasks-date-row .link-btn::before {
+  content: "·";
+  margin: 0 6px 0 2px;
+  color: var(--text-dim);
+  font-weight: 400;
+}
 
 .link-btn {
   flex: 0 0 auto;
   background: none;
   border: none;
-  padding: 4px 2px;
+  padding: 0;
   color: var(--accent);
   font-size: 0.9rem;
   font-weight: 600;
@@ -2426,3 +2448,7 @@ main {
 }
 
 .link-btn[hidden] { display: none; }
+
+.tasks-header:has(.tasks-progress[hidden]) { display: none; }
+
+.tasks-date-text .link-btn[hidden] { display: none; }
