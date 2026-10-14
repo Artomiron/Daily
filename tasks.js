@@ -140,54 +140,7 @@ function renderRepeatEditor(el, repeat, date, onChange) {
 
 // ---------- Вкладка «Задачі» ----------
 
-const taskInput = document.getElementById('task-input');
-const taskRepeatToggle = document.getElementById('task-repeat-toggle');
-const taskRepeatPanel = document.getElementById('task-repeat-panel');
-let newTaskRepeat = { type: 'none' };
-
-function renderNewTaskRepeat() {
-  taskRepeatToggle.classList.toggle('active', newTaskRepeat.type !== 'none');
-  renderRepeatEditor(taskRepeatPanel, newTaskRepeat, currentDate, (repeat) => {
-    newTaskRepeat = repeat;
-    renderNewTaskRepeat();
-  });
-}
-
-taskRepeatToggle.addEventListener('click', () => {
-  taskRepeatPanel.hidden = !taskRepeatPanel.hidden;
-  if (!taskRepeatPanel.hidden) renderNewTaskRepeat();
-});
-
-function addTask() {
-  const title = taskInput.value.trim();
-  if (!title) {
-    taskInput.focus();
-    return;
-  }
-  taskStore.tasks.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    title,
-    start: currentDate,
-    repeat: newTaskRepeat,
-    until: null,
-    createdAt: new Date().toISOString(),
-  });
-  saveTasks();
-  flashSaved();
-  taskInput.value = '';
-  newTaskRepeat = { type: 'none' };
-  taskRepeatPanel.hidden = true;
-  taskRepeatToggle.classList.remove('active');
-  renderTasks();
-}
-
-document.getElementById('task-add-btn').addEventListener('click', addTask);
-taskInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    addTask();
-  }
-});
+document.getElementById('task-new-btn').addEventListener('click', () => openTaskSheet(null));
 
 document.getElementById('tasks-prev').addEventListener('click', () => setDate(shiftDate(currentDate, -1)));
 document.getElementById('tasks-next').addEventListener('click', () => setDate(shiftDate(currentDate, 1)));
@@ -219,7 +172,7 @@ function renderTasks() {
   const list = document.getElementById('task-list');
   list.innerHTML = '';
   if (!tasks.length) {
-    list.innerHTML = '<div class="tasks-empty">На цей день задач немає.<br>Додайте першу вище ☝️</div>';
+    renderTasksEmpty(list);
     return;
   }
 
@@ -241,6 +194,26 @@ function renderTasks() {
     row.querySelector('.task-body').addEventListener('click', () => openTaskSheet(task));
     list.appendChild(row);
   });
+}
+
+// Порожній стан за HIG: іконка, короткий заголовок і пояснення; дія — кнопка «Нова задача» внизу
+function renderTasksEmpty(list) {
+  const today = todayISO();
+  const copy = currentDate < today
+    ? { title: 'Цього дня задач не було', text: 'Можна додати задачу заднім числом, щоб нічого не загубилось.' }
+    : currentDate === today
+      ? { title: 'Сьогодні вільно', text: 'Сплануйте день: додайте першу задачу кнопкою «Нова задача» внизу.' }
+      : { title: 'Поки нічого не заплановано', text: 'Додайте задачу наперед — вона чекатиме на цей день.' };
+  list.innerHTML = `
+    <div class="tasks-empty">
+      <div class="tasks-empty-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48"><rect x="9" y="7" width="30" height="36" rx="7"/><path d="M17 19l3 3 6-6M17 31h14"/></svg>
+      </div>
+      <div class="tasks-empty-title"></div>
+      <div class="tasks-empty-text"></div>
+    </div>`;
+  list.querySelector('.tasks-empty-title').textContent = copy.title;
+  list.querySelector('.tasks-empty-text').textContent = copy.text;
 }
 
 function toggleTask(task, row, checkEl) {
@@ -352,25 +325,46 @@ function celebrateAllDone() {
 // ---------- Редагування задачі ----------
 
 const taskSheet = document.getElementById('task-sheet');
+const sheetTitleInput = document.getElementById('task-sheet-title');
+const sheetSaveBtn = document.getElementById('task-sheet-save');
+// null — створення нової задачі, інакше — редагування
 let sheetTask = null;
 let sheetRepeat = null;
 
 function openTaskSheet(task) {
   sheetTask = task;
-  sheetRepeat = { ...task.repeat, days: task.repeat.days ? [...task.repeat.days] : undefined };
-  document.getElementById('task-sheet-title').value = task.title;
+  sheetRepeat = task ? { ...task.repeat, days: task.repeat.days ? [...task.repeat.days] : undefined } : { type: 'none' };
+  document.getElementById('task-sheet-heading').textContent = task ? 'Задача' : 'Нова задача';
+  sheetSaveBtn.textContent = task ? 'Готово' : 'Додати';
+  sheetTitleInput.value = task ? task.title : '';
+  updateSheetSave();
   renderSheetRepeat();
-  renderSheetDelete(false);
+  if (task) renderSheetDelete(false);
+  else document.getElementById('task-sheet-delete').innerHTML = '';
   taskSheet.hidden = false;
+  if (!task) sheetTitleInput.focus();
 }
 
 function closeTaskSheet() {
   taskSheet.hidden = true;
   sheetTask = null;
+  sheetTitleInput.blur();
 }
 
+function updateSheetSave() {
+  sheetSaveBtn.disabled = !sheetTitleInput.value.trim();
+}
+
+sheetTitleInput.addEventListener('input', updateSheetSave);
+sheetTitleInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    saveTaskSheet();
+  }
+});
+
 function renderSheetRepeat() {
-  renderRepeatEditor(document.getElementById('task-sheet-repeat'), sheetRepeat, sheetTask.start, (repeat) => {
+  renderRepeatEditor(document.getElementById('task-sheet-repeat'), sheetRepeat, sheetTask ? sheetTask.start : currentDate, (repeat) => {
     sheetRepeat = repeat;
     renderSheetRepeat();
   });
@@ -384,7 +378,7 @@ function renderSheetDelete(confirming) {
   if (!confirming) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'danger-btn';
+    btn.className = 'sheet-danger';
     btn.textContent = 'Видалити задачу';
     btn.addEventListener('click', () => renderSheetDelete(true));
     box.appendChild(btn);
@@ -400,7 +394,7 @@ function renderSheetDelete(confirming) {
   options.forEach((option) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'danger-btn';
+    btn.className = 'sheet-danger';
     btn.textContent = option.text;
     btn.addEventListener('click', () => {
       option.action();
@@ -413,7 +407,7 @@ function renderSheetDelete(confirming) {
   });
   const cancel = document.createElement('button');
   cancel.type = 'button';
-  cancel.className = 'secondary-btn';
+  cancel.className = 'sheet-plain';
   cancel.textContent = 'Не видаляти';
   cancel.addEventListener('click', () => renderSheetDelete(false));
   box.appendChild(cancel);
@@ -435,19 +429,32 @@ function deleteTaskFrom(task, date) {
   }
 }
 
-document.getElementById('task-sheet-save').addEventListener('click', () => {
-  const title = document.getElementById('task-sheet-title').value.trim();
+function saveTaskSheet() {
+  const title = sheetTitleInput.value.trim();
   if (!title) {
-    document.getElementById('task-sheet-title').focus();
+    sheetTitleInput.focus();
     return;
   }
-  sheetTask.title = title;
-  sheetTask.repeat = sheetRepeat;
+  if (sheetTask) {
+    sheetTask.title = title;
+    sheetTask.repeat = sheetRepeat;
+  } else {
+    taskStore.tasks.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      title,
+      start: currentDate,
+      repeat: sheetRepeat,
+      until: null,
+      createdAt: new Date().toISOString(),
+    });
+  }
   saveTasks();
   flashSaved();
   closeTaskSheet();
   renderTasks();
-});
+}
+
+sheetSaveBtn.addEventListener('click', saveTaskSheet);
 
 document.getElementById('task-sheet-cancel').addEventListener('click', closeTaskSheet);
 taskSheet.addEventListener('click', (e) => {

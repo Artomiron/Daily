@@ -119,21 +119,18 @@
     </div>
     <p id="tasks-date-label" class="date-label"></p>
 
-    <div class="card task-add">
-      <div class="task-add-row">
-        <input type="text" id="task-input" placeholder="Нова задача…" enterkeyhint="done" autocomplete="off">
-        <button type="button" id="task-repeat-toggle" class="icon-btn" title="Повторювати задачу">🔁</button>
-        <button type="button" id="task-add-btn" class="primary-btn" aria-label="Додати задачу">+</button>
-      </div>
-      <div id="task-repeat-panel" class="task-repeat-panel" hidden></div>
-    </div>
-
     <div id="tasks-progress" class="tasks-progress" hidden>
       <div class="tasks-progress-text"></div>
       <div class="tasks-progress-bar"><div class="tasks-progress-fill"></div></div>
     </div>
 
     <div id="task-list" class="task-list"></div>
+
+    <div class="tasks-toolbar">
+      <button type="button" id="task-new-btn" class="task-new-btn">
+        <span class="task-new-plus" aria-hidden="true">+</span>Нова задача
+      </button>
+    </div>
   </section>
 
   <section id="tab-stats" class="tab-panel">
@@ -170,15 +167,18 @@
 <div id="tasks-celebrate" class="tasks-celebrate" aria-live="polite">🎉 Усі задачі на день виконано!</div>
 
 <section id="task-sheet" class="sheet" hidden>
-  <div class="sheet-panel" role="dialog" aria-label="Редагування задачі">
-    <div class="sheet-handle"></div>
-    <label class="body-q-title" for="task-sheet-title">Задача</label>
-    <input type="text" id="task-sheet-title" class="sheet-input" autocomplete="off">
-    <div class="body-q-title sheet-label">🔁 Повтор</div>
-    <div id="task-sheet-repeat"></div>
-    <div class="sheet-actions">
-      <button type="button" id="task-sheet-cancel" class="secondary-btn">Скасувати</button>
-      <button type="button" id="task-sheet-save" class="primary-btn">Зберегти</button>
+  <div class="sheet-panel" role="dialog" aria-labelledby="task-sheet-heading">
+    <div class="sheet-nav">
+      <button type="button" id="task-sheet-cancel" class="sheet-nav-btn">Скасувати</button>
+      <h2 id="task-sheet-heading" class="sheet-nav-title">Нова задача</h2>
+      <button type="button" id="task-sheet-save" class="sheet-nav-btn sheet-nav-primary">Додати</button>
+    </div>
+    <div class="sheet-group">
+      <input type="text" id="task-sheet-title" class="sheet-input" placeholder="Що потрібно зробити?" enterkeyhint="done" autocomplete="off" aria-label="Назва задачі">
+    </div>
+    <div class="sheet-section-title">Повтор</div>
+    <div class="sheet-group">
+      <div id="task-sheet-repeat"></div>
     </div>
     <div id="task-sheet-delete" class="sheet-delete"></div>
   </div>
