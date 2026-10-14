@@ -759,6 +759,7 @@ main {
 
 .app-modal-back {
   flex: 0 0 auto;
+  min-height: 44px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1275,26 +1276,37 @@ main {
 }
 
 .task.done {
-  background: rgba(95, 211, 160, 0.08);
-  border-color: rgba(95, 211, 160, 0.35);
+  background: transparent;
+  border-color: var(--border);
 }
 
 .task-check {
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid var(--text-dim);
+  /* Зона дотику 44×44 за HIG, видимий кружечок — 28px */
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  margin: -8px -4px -8px -8px;
+  border: none;
   background: transparent;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.check-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.25s, border-color 0.25s;
 }
 
-.task-check svg {
+.check-circle svg {
   width: 18px;
   height: 18px;
   fill: none;
@@ -1307,14 +1319,14 @@ main {
   transition: stroke-dashoffset 0.3s ease-out 0.08s;
 }
 
-.task.done .task-check {
+.task.done .check-circle {
   background: var(--accent-green);
   border-color: var(--accent-green);
 }
 
-.task.done .task-check svg { stroke-dashoffset: 0; }
+.task.done .check-circle svg { stroke-dashoffset: 0; }
 
-.task.just-done .task-check { animation: task-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.task.just-done .check-circle { animation: task-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
 .task.just-done { animation: task-glow 0.7s ease-out; }
 
 @keyframes task-pop {
@@ -1355,8 +1367,21 @@ main {
 }
 
 .task-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.75rem;
   color: var(--text-dim);
+}
+
+.meta-icon {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .task-meta:empty { display: none; }
@@ -1402,7 +1427,7 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .task.just-done, .task.just-done .task-check { animation: none; }
+  .task.just-done, .task.just-done .check-circle { animation: none; }
 }
 
 /* ---------- Нижня шторка ---------- */
@@ -1817,27 +1842,6 @@ main {
   margin-right: 6px;
 }
 
-.task.star .task-check { border-color: #FFC233; }
-
-.task.star.done .task-check {
-  background: linear-gradient(135deg, #FFE58A, #FFB627);
-  border-color: #FFB627;
-}
-
-.task.star.done .task-check svg { stroke: #4a2f00; }
-
-.task.star.done {
-  background: rgba(255, 194, 51, 0.08);
-  border-color: rgba(255, 194, 51, 0.35);
-}
-
-.task.star.just-done { animation: task-glow-gold 0.7s ease-out; }
-
-@keyframes task-glow-gold {
-  0% { box-shadow: 0 0 0 0 rgba(255, 194, 51, 0.6); }
-  100% { box-shadow: 0 0 0 14px rgba(255, 194, 51, 0); }
-}
-
 /* Перемикач типу в стилі iOS */
 .segmented {
   display: grid;
@@ -2009,24 +2013,16 @@ main {
 .tasks-topbar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 2px;
+  margin-bottom: 6px;
 }
 
-.date-controls.compact {
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
-.date-controls.compact input[type="date"] {
-  flex: 0 1 150px;
-  width: 150px;
-}
 
 .shop-btn {
   flex: 0 0 auto;
-  margin-left: auto;
-  width: 40px;
-  height: 38px;
+  margin-left: 8px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2054,8 +2050,8 @@ main {
 #shop-modal .app-modal-inner { padding-bottom: 90px; }
 
 .shop-archive-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   display: flex;
   align-items: center;
@@ -2165,9 +2161,9 @@ main {
 .shop-buy-btn {
   flex: 0 0 auto;
   min-width: 84px;
-  height: 38px;
+  height: 44px;
   padding: 0 14px;
-  border-radius: 19px;
+  border-radius: 22px;
   border: 1px solid rgba(255, 194, 51, 0.35);
   background: transparent;
   color: var(--text-dim);
@@ -2407,3 +2403,209 @@ main {
 
 
 
+
+/* ---------- Смужка тижня ---------- */
+
+.month-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  margin-right: auto;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.month-chevron {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Прозоре поле дати поверх назви місяця — тап відкриває системний календар */
+.month-picker input[type="date"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.week-today {
+  min-height: 44px;
+  padding: 0 8px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.week-today[hidden] { display: none; }
+
+.week-nav {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.week-nav svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--text-dim);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.week-nav:active svg { stroke: var(--text); }
+
+/* На найвужчих телефонах стрілки не вміщаються за HIG — лишаємо свайп по смужці */
+@media (max-width: 359px) {
+  .week-nav { display: none; }
+}
+
+.week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 14px;
+  touch-action: pan-y;
+}
+
+.week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 64px;
+  padding: 7px 0 6px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.week-day-name {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.week-day-num {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.week-day.today .week-day-num { color: var(--accent); }
+
+.week-day.selected { background: var(--accent); }
+
+.week-day.selected .week-day-name { color: rgba(255, 255, 255, 0.8); }
+
+.week-day.selected .week-day-num { color: #fff; }
+
+.week-day-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.week-day-dot.open { background: var(--text-dim); }
+.week-day-dot.done { background: var(--accent-green); }
+.week-day.selected .week-day-dot.open { background: rgba(255, 255, 255, 0.7); }
+.week-day.selected .week-day-dot.done { background: #c8ffe6; }
+
+/* ---------- Розділ «Виконано» ---------- */
+
+.done-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 4px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.done-count {
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  line-height: 18px;
+  text-align: center;
+}
+
+.done-chevron {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s;
+}
+
+.done-header.collapsed .done-chevron { transform: rotate(-90deg); }
+
+.done-header.bump .done-count { animation: total-bump 0.5s cubic-bezier(0.3, 1.8, 0.5, 1); }
+
+/* ---------- Прогрес до товару ---------- */
+
+.shop-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.shop-progress-bar {
+  flex: 1 1 auto;
+  min-width: 50px;
+  max-width: 120px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.shop-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #FF9F1C, #FFD54A);
+}
+
+.shop-progress-text {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}

@@ -166,16 +166,102 @@ function renderRepeatEditor(el, repeat, date, onChange) {
 
 document.getElementById('task-new-btn').addEventListener('click', () => openTaskSheet(null));
 
-document.getElementById('tasks-prev').addEventListener('click', () => setDate(shiftDate(currentDate, -1)));
-document.getElementById('tasks-next').addEventListener('click', () => setDate(shiftDate(currentDate, 1)));
-document.getElementById('tasks-date').addEventListener('change', (e) => {
-  if (e.target.value) setDate(e.target.value);
+// ---------- Смужка тижня ----------
+
+const WEEK_SHORT = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+function weekStart(date) {
+  const day = fromISODate(date).getDay();
+  return shiftDate(date, -((day + 6) % 7));
+}
+
+// Стан дня для крапки під датою: немає задач / є невиконані / усе виконано
+function dayStatus(date) {
+  const tasks = tasksForDate(date);
+  if (!tasks.length) return 'none';
+  return tasks.every((t) => isTaskDone(t, date)) ? 'done' : 'open';
+}
+
+function renderWeekStrip() {
+  const today = todayISO();
+  const selected = fromISODate(currentDate);
+  const month = selected.toLocaleDateString('uk-UA', { month: 'long' });
+  const year = selected.getFullYear() !== new Date().getFullYear() ? ` ${selected.getFullYear()}` : '';
+  document.getElementById('week-month').textContent = capitalize(month) + year;
+  document.getElementById('week-today').hidden = currentDate === today;
+
+  const strip = document.getElementById('week-strip');
+  strip.innerHTML = '';
+  const start = weekStart(currentDate);
+  for (let i = 0; i < 7; i++) {
+    const date = shiftDate(start, i);
+    const d = fromISODate(date);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', date === currentDate);
+    btn.className = 'week-day' + (date === currentDate ? ' selected' : '') + (date === today ? ' today' : '');
+    btn.innerHTML = `
+      <span class="week-day-name">${WEEK_SHORT[d.getDay()]}</span>
+      <span class="week-day-num">${d.getDate()}</span>
+      <span class="week-day-dot ${dayStatus(date)}"></span>`;
+    btn.setAttribute('aria-label', capitalize(formatLongDate(date)));
+    btn.addEventListener('click', () => setDate(date));
+    strip.appendChild(btn);
+  }
+}
+
+document.getElementById('week-prev').addEventListener('click', () => setDate(shiftDate(currentDate, -7)));
+document.getElementById('week-next').addEventListener('click', () => setDate(shiftDate(currentDate, 7)));
+document.getElementById('week-today').addEventListener('click', () => setDate(todayISO()));
+
+const tasksDateInput = document.getElementById('tasks-date');
+tasksDateInput.addEventListener('change', () => {
+  if (tasksDateInput.value) setDate(tasksDateInput.value);
+});
+// На десктопі прозоре поле дати не відкриває календар саме — допомагаємо
+tasksDateInput.addEventListener('click', () => {
+  try {
+    tasksDateInput.showPicker?.();
+  } catch {}
 });
 
+// Свайп по смужці гортає тижні
+let weekTouchX = null;
+const weekStrip = document.getElementById('week-strip');
+weekStrip.addEventListener('touchstart', (e) => {
+  weekTouchX = e.touches[0].clientX;
+}, { passive: true });
+weekStrip.addEventListener('touchend', (e) => {
+  if (weekTouchX == null) return;
+  const dx = e.changedTouches[0].clientX - weekTouchX;
+  weekTouchX = null;
+  if (Math.abs(dx) > 50) setDate(shiftDate(currentDate, dx < 0 ? 7 : -7));
+});
+
+// ---------- Список задач ----------
+
 const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const REPEAT_SVG = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>';
+const STORAGE_DONE_COLLAPSED = 'daily-tasks-done-collapsed';
+
+function isDoneCollapsed() {
+  try {
+    return localStorage.getItem(STORAGE_DONE_COLLAPSED) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+function setDoneCollapsed(value) {
+  try {
+    localStorage.setItem(STORAGE_DONE_COLLAPSED, String(value));
+  } catch {}
+}
 
 function renderTasks() {
-  document.getElementById('tasks-date').value = currentDate;
+  tasksDateInput.value = currentDate;
+  renderWeekStrip();
 
   const tasks = tasksForDate(currentDate);
   const doneCount = tasks.filter((t) => isTaskDone(t, currentDate)).length;
@@ -195,24 +281,50 @@ function renderTasks() {
     return;
   }
 
-  tasks.forEach((task) => {
-    const done = isTaskDone(task, currentDate);
-    const row = document.createElement('div');
-    row.className = 'task' + (done ? ' done' : '') + (task.star ? ' star' : '');
-    row.innerHTML = `
-      <button type="button" class="task-check" role="checkbox" aria-checked="${done}">${CHECK_SVG}</button>
-      <button type="button" class="task-body">
-        <span class="task-title">${task.star ? '<i class="task-star" aria-label="Зіркова задача">★</i>' : ''}<span></span></span>
-        <span class="task-meta"></span>
-      </button>`;
-    row.querySelector('.task-title span').textContent = task.title;
-    const meta = repeatLabel(task.repeat);
-    row.querySelector('.task-meta').textContent = meta ? `🔁 ${meta}` : '';
-    row.querySelector('.task-check').setAttribute('aria-label', done ? `Позначити «${task.title}» невиконаною` : `Позначити «${task.title}» виконаною`);
-    row.querySelector('.task-check').addEventListener('click', (e) => toggleTask(task, row, e.currentTarget));
-    row.querySelector('.task-body').addEventListener('click', () => openTaskSheet(task));
-    list.appendChild(row);
-  });
+  // Виконані — в окремому розділі, який можна згорнути, як у «Нагадуваннях»
+  const openTasks = tasks.filter((t) => !isTaskDone(t, currentDate));
+  const doneTasks = tasks.filter((t) => isTaskDone(t, currentDate));
+  openTasks.forEach((task) => list.appendChild(renderTaskRow(task)));
+  if (doneTasks.length) {
+    const collapsed = isDoneCollapsed();
+    const header = document.createElement('button');
+    header.type = 'button';
+    header.id = 'done-header';
+    header.className = 'done-header' + (collapsed ? ' collapsed' : '');
+    header.setAttribute('aria-expanded', !collapsed);
+    header.innerHTML = `
+      <span>Виконано</span>
+      <span class="done-count">${doneTasks.length}</span>
+      <svg class="done-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>`;
+    header.addEventListener('click', () => {
+      setDoneCollapsed(!collapsed);
+      renderTasks();
+    });
+    list.appendChild(header);
+    if (!collapsed) doneTasks.forEach((task) => list.appendChild(renderTaskRow(task)));
+  }
+}
+
+function renderTaskRow(task) {
+  const done = isTaskDone(task, currentDate);
+  const row = document.createElement('div');
+  row.className = 'task' + (done ? ' done' : '') + (task.star ? ' star' : '');
+  row.innerHTML = `
+    <button type="button" class="task-check" role="checkbox" aria-checked="${done}"><span class="check-circle">${CHECK_SVG}</span></button>
+    <button type="button" class="task-body">
+      <span class="task-title">${task.star ? '<i class="task-star" aria-label="Зіркова задача">★</i>' : ''}<span></span></span>
+      <span class="task-meta"></span>
+    </button>`;
+  row.querySelector('.task-title span').textContent = task.title;
+  const meta = repeatLabel(task.repeat);
+  if (meta) {
+    row.querySelector('.task-meta').innerHTML = REPEAT_SVG;
+    row.querySelector('.task-meta').append(meta);
+  }
+  row.querySelector('.task-check').setAttribute('aria-label', done ? `Позначити «${task.title}» невиконаною` : `Позначити «${task.title}» виконаною`);
+  row.querySelector('.task-check').addEventListener('click', (e) => toggleTask(task, row, e.currentTarget));
+  row.querySelector('.task-body').addEventListener('click', () => openTaskSheet(task));
+  return row;
 }
 
 // Порожній стан за HIG: іконка, короткий заголовок і пояснення; дія — кнопка «Нова задача» внизу
@@ -271,7 +383,11 @@ function toggleTask(task, row, checkEl) {
   const allDone = all.length && all.every((t) => isTaskDone(t, date));
   // Даємо анімації дограти, потім виконана задача опускається вниз
   setTimeout(() => {
-    if (currentDate === date) renderTasks();
+    if (currentDate === date) {
+      renderTasks();
+      const header = document.getElementById('done-header');
+      if (header) pulse(header, 'bump');
+    }
     if (allDone) celebrateAllDone();
   }, 650);
 }

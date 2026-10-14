@@ -112,15 +112,24 @@
 
   <section id="tab-tasks" class="tab-panel">
     <div class="tasks-topbar">
-      <div class="date-controls compact">
-        <button id="tasks-prev" title="Попередній день">←</button>
-        <input type="date" id="tasks-date">
-        <button id="tasks-next" title="Наступний день">→</button>
-      </div>
+      <label class="month-picker">
+        <span id="week-month"></span>
+        <svg class="month-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+        <input type="date" id="tasks-date" aria-label="Обрати дату">
+      </label>
+      <button type="button" id="week-today" class="week-today" hidden>Сьогодні</button>
+      <button type="button" id="week-prev" class="week-nav" aria-label="Попередній тиждень">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <button type="button" id="week-next" class="week-nav" aria-label="Наступний тиждень">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
       <button type="button" id="open-shop-btn" class="shop-btn" aria-label="Магазин винагород">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8.5h13l.9 10.6a2 2 0 0 1-2 2.2H6.6a2 2 0 0 1-2-2.2z"/><path d="M8.8 11.5V7a3.2 3.2 0 0 1 6.4 0v4.5"/></svg>
       </button>
     </div>
+    <div id="week-strip" class="week-strip" role="tablist" aria-label="Дні тижня"></div>
+
     <div class="tasks-header">
       <div id="tasks-progress" class="tasks-progress" hidden>
         <div class="tasks-progress-text"></div>
@@ -184,7 +193,7 @@
   <div class="app-modal-inner">
     <div class="app-modal-header">
       <button type="button" class="app-modal-back" data-close-modal="shop-modal">← Назад</button>
-      <h2 class="app-modal-title">🛍️ Магазин</h2>
+      <h2 class="app-modal-title">Магазин</h2>
       <button type="button" id="open-archive-btn" class="icon-btn shop-archive-btn" aria-label="Архів покупок" title="Архів покупок">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/></svg>
       </button>
@@ -212,7 +221,7 @@
   <div class="app-modal-inner">
     <div class="app-modal-header">
       <button type="button" class="app-modal-back" data-close-modal="archive-modal">← Назад</button>
-      <h2 class="app-modal-title">🗂️ Архів покупок</h2>
+      <h2 class="app-modal-title">Архів покупок</h2>
     </div>
     <p id="archive-summary" class="app-modal-hint"></p>
     <div id="archive-list" class="archive-list"></div>

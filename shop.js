@@ -69,7 +69,9 @@ function renderShop() {
   if (!shopStore.items.length) {
     list.innerHTML = `
       <div class="tasks-empty shop-empty">
-        <div class="tasks-empty-icon shop-empty-icon" aria-hidden="true">🎁</div>
+        <div class="tasks-empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><rect x="8" y="18" width="32" height="22" rx="4"/><path d="M6 13h36v6H6zM24 13v27M24 13c-3-6-11-6-9 0M24 13c3-6 11-6 9 0"/></svg>
+        </div>
         <div class="tasks-empty-title">Магазин поки порожній</div>
         <div class="tasks-empty-text">Додайте винагороди, на які хочете заробити зірки: кіно, смаколик, нова книга…</div>
       </div>`;
@@ -83,6 +85,10 @@ function renderShop() {
 
 function renderShopItem(item, balance) {
   const affordable = balance >= item.cost;
+  // Прогрес до товару враховує й частково заповнену зірку — смужка рухається з кожною зірковою задачею
+  const saved = balance + (starPoints() % STAR_GOAL) / STAR_GOAL;
+  const share = Math.min(1, Math.max(0, saved / item.cost));
+  const missing = item.cost - balance;
   const card = document.createElement('div');
   card.className = 'shop-item' + (affordable ? ' affordable' : '');
   card.innerHTML = `
@@ -91,6 +97,11 @@ function renderShopItem(item, balance) {
       <span class="shop-item-info">
         <span class="shop-item-title"></span>
         <span class="shop-item-cost">★ ${item.cost}</span>
+        ${affordable ? '' : `
+        <span class="shop-progress" aria-label="Ще ${missing} ★ до цієї винагороди">
+          <span class="shop-progress-bar"><span class="shop-progress-fill" style="width:${share * 100}%"></span></span>
+          <span class="shop-progress-text">ще ${missing} ★</span>
+        </span>`}
       </span>
     </button>
     <button type="button" class="shop-buy-btn">Купити</button>`;
@@ -336,7 +347,9 @@ function renderArchive() {
   if (!purchases.length) {
     list.innerHTML = `
       <div class="tasks-empty">
-        <div class="tasks-empty-icon shop-empty-icon" aria-hidden="true">🗂️</div>
+        <div class="tasks-empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><rect x="6" y="9" width="36" height="10" rx="3"/><path d="M10 19v16a4 4 0 0 0 4 4h20a4 4 0 0 0 4-4V19M20 27h8"/></svg>
+        </div>
         <div class="tasks-empty-title">Покупок ще немає</div>
         <div class="tasks-empty-text">Тут з'являться винагороди, які ви купите за зірки.</div>
       </div>`;
