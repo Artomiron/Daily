@@ -26,6 +26,11 @@ const INTERVAL_MAX = 30;
 
 const STAR_GOAL = 5;
 
+// Висота золота (у % від квадрата) для 0…5 балів, щоб залита площа зірки була рівно 0, 1/5 … 5/5.
+// Верхній промінь вузький, тож за висотою 4/5 виглядали б майже повною зіркою.
+// Пораховано для контуру зірки нижче; при зміні STAR_GOAL чи форми — перерахувати.
+const STAR_FILL_HEIGHTS = [0, 32.5, 44.7, 53.8, 60.8, 100];
+
 const STAR_PHRASES = [
   'Мрії стають ближчими! ✨',
   'Ще одна зірка у вашому небі! 🌟',
@@ -364,13 +369,8 @@ function renderStarWidget(options = {}) {
   const points = starPoints();
   const inProgress = options.full ? STAR_GOAL : points % STAR_GOAL;
   const total = options.full ? Math.floor(points / STAR_GOAL) - 1 : Math.floor(points / STAR_GOAL);
-  // Зірка займає не весь квадрат: від 10.8% до 85.4% висоти, тож прогрес рахуємо в її межах
-  const STAR_BOTTOM = 14.6;
-  const STAR_HEIGHT = 74.6;
-  starWidget.querySelector('.star-fill').style.height = inProgress
-    ? `${STAR_BOTTOM + (inProgress / STAR_GOAL) * STAR_HEIGHT}%`
-    : '0';
-  starWidget.classList.toggle('has-progress', inProgress > 0);
+  starWidget.querySelector('.star-fill').style.height = `${STAR_FILL_HEIGHTS[inProgress]}%`;
+  starWidget.classList.toggle('is-full', inProgress === STAR_GOAL);
   document.getElementById('star-progress-text').textContent = `${inProgress}/${STAR_GOAL}`;
   document.getElementById('star-total').textContent = total;
   starWidget.setAttribute('aria-label', `Зірка: ${inProgress} з ${STAR_GOAL}. Зібрано зірок: ${total}`);
