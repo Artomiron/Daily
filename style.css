@@ -1643,7 +1643,7 @@ main {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin: 0 2px 12px;
+  margin: 12px 2px;
 }
 
 .tasks-header .tasks-progress {
@@ -2405,50 +2405,5 @@ main {
   .gift-lid { transform: translate(34px, -46px) rotate(38deg); }
 }
 
-.tasks-date-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 8px 2px 12px;
-}
 
-/* Дата і «Сьогодні» — один текстовий рядок, переносяться разом */
-.tasks-date-text {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin: 0;
-  color: var(--text-dim);
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
 
-.tasks-date-text .link-btn {
-  display: inline;
-  font-size: inherit;
-  white-space: nowrap;
-}
-
-/* «Сьогодні» — одразу після підпису дня, через крапку */
-.tasks-date-row .link-btn::before {
-  content: "·";
-  margin: 0 6px 0 2px;
-  color: var(--text-dim);
-  font-weight: 400;
-}
-
-.link-btn {
-  flex: 0 0 auto;
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--accent);
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.link-btn[hidden] { display: none; }
-
-.tasks-header:has(.tasks-progress[hidden]) { display: none; }
-
-.tasks-date-text .link-btn[hidden] { display: none; }

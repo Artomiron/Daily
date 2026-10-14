@@ -171,17 +171,11 @@ document.getElementById('tasks-next').addEventListener('click', () => setDate(sh
 document.getElementById('tasks-date').addEventListener('change', (e) => {
   if (e.target.value) setDate(e.target.value);
 });
-document.getElementById('tasks-today').addEventListener('click', () => setDate(todayISO()));
 
 const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
 function renderTasks() {
-  const isToday = currentDate === todayISO();
   document.getElementById('tasks-date').value = currentDate;
-  document.getElementById('tasks-today').hidden = isToday;
-  document.getElementById('tasks-date-label').textContent = isToday
-    ? `Сьогодні, ${formatLongDate(currentDate)}`
-    : capitalize(formatLongDate(currentDate));
 
   const tasks = tasksForDate(currentDate);
   const doneCount = tasks.filter((t) => isTaskDone(t, currentDate)).length;
