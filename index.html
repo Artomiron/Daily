@@ -110,6 +110,32 @@
 
   </section>
 
+  <section id="tab-tasks" class="tab-panel">
+    <div class="date-controls">
+      <button id="tasks-prev" title="Попередній день">←</button>
+      <input type="date" id="tasks-date">
+      <button id="tasks-next" title="Наступний день">→</button>
+      <button id="tasks-today" class="text-btn" title="Повернутись до сьогодні">Сьогодні</button>
+    </div>
+    <p id="tasks-date-label" class="date-label"></p>
+
+    <div class="card task-add">
+      <div class="task-add-row">
+        <input type="text" id="task-input" placeholder="Нова задача…" enterkeyhint="done" autocomplete="off">
+        <button type="button" id="task-repeat-toggle" class="icon-btn" title="Повторювати задачу">🔁</button>
+        <button type="button" id="task-add-btn" class="primary-btn" aria-label="Додати задачу">+</button>
+      </div>
+      <div id="task-repeat-panel" class="task-repeat-panel" hidden></div>
+    </div>
+
+    <div id="tasks-progress" class="tasks-progress" hidden>
+      <div class="tasks-progress-text"></div>
+      <div class="tasks-progress-bar"><div class="tasks-progress-fill"></div></div>
+    </div>
+
+    <div id="task-list" class="task-list"></div>
+  </section>
+
   <section id="tab-stats" class="tab-panel">
     <div class="period-row">
       <button class="period-btn active" data-days="7">7 днів</button>
@@ -135,10 +161,28 @@
 
 <nav class="bottom-tabs">
   <button class="tab-btn active" data-tab="today"><span class="tab-icon">✍️</span><span>Сьогодні</span></button>
+  <button class="tab-btn" data-tab="tasks"><span class="tab-icon">✅</span><span>Задачі</span></button>
   <button class="tab-btn" data-tab="stats"><span class="tab-icon">📊</span><span>Статистика</span></button>
 </nav>
 
 <p id="save-status" class="save-status" aria-live="polite"></p>
+
+<div id="tasks-celebrate" class="tasks-celebrate" aria-live="polite">🎉 Усі задачі на день виконано!</div>
+
+<section id="task-sheet" class="sheet" hidden>
+  <div class="sheet-panel" role="dialog" aria-label="Редагування задачі">
+    <div class="sheet-handle"></div>
+    <label class="body-q-title" for="task-sheet-title">Задача</label>
+    <input type="text" id="task-sheet-title" class="sheet-input" autocomplete="off">
+    <div class="body-q-title sheet-label">🔁 Повтор</div>
+    <div id="task-sheet-repeat"></div>
+    <div class="sheet-actions">
+      <button type="button" id="task-sheet-cancel" class="secondary-btn">Скасувати</button>
+      <button type="button" id="task-sheet-save" class="primary-btn">Зберегти</button>
+    </div>
+    <div id="task-sheet-delete" class="sheet-delete"></div>
+  </div>
+</section>
 
 <section id="thoughts-modal" class="app-modal" hidden>
   <div class="app-modal-inner">
@@ -181,6 +225,7 @@
 <script src="circumplex.js?v=1.2"></script>
 <script src="body.js?v=1.2"></script>
 <script src="factors.js?v=1.2"></script>
+<script src="tasks.js?v=1.2"></script>
 <script src="app.js?v=1.2"></script>
 </body>
 </html>

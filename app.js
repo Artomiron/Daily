@@ -114,6 +114,7 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === `tab-${tab}`));
+  if (tab === 'tasks') renderTasks();
   if (tab === 'stats') renderStats();
   window.scrollTo(0, 0);
 }
@@ -138,9 +139,11 @@ document.getElementById('prev-day').addEventListener('click', () => setDate(shif
 document.getElementById('next-day').addEventListener('click', () => setDate(shiftDate(currentDate, 1)));
 document.getElementById('go-today').addEventListener('click', () => setDate(todayISO()));
 
+// Обраний день спільний для «Сьогодні» і «Задач»
 function setDate(date) {
   currentDate = date;
   renderToday();
+  renderTasks();
 }
 
 function renderToday() {
@@ -664,7 +667,7 @@ document.getElementById('open-settings-btn').addEventListener('click', () => {
 });
 
 document.getElementById('export-btn').addEventListener('click', async () => {
-  const data = { app: 'daily', version: APP_VERSION, exportedAt: new Date().toISOString(), entries };
+  const data = { app: 'daily', version: APP_VERSION, exportedAt: new Date().toISOString(), entries, tasks: taskStore };
   const json = JSON.stringify(data, null, 2);
   const fileName = `daily-backup-${todayISO()}.json`;
   const file = new File([json], fileName, { type: 'application/json' });
@@ -706,8 +709,13 @@ importFile.addEventListener('change', async () => {
       entries[date] = mergeEntries(entries[date], entry);
     });
     saveEntries();
+    if (data.tasks) {
+      taskStore = mergeTaskStores(taskStore, data.tasks);
+      saveTasks();
+    }
     renderToday();
-    backupStatus.textContent = `Імпортовано ${count} записів ✓`;
+    renderTasks();
+    backupStatus.textContent = `Імпортовано ${count} записів${data.tasks ? ` і ${data.tasks.tasks?.length || 0} задач` : ''} ✓`;
   } catch {
     backupStatus.textContent = 'Не вдалося прочитати файл. Це точно резервна копія Daily?';
   }
@@ -734,6 +742,7 @@ function mergeEntries(existing, incoming) {
 // ---------- Ініціалізація ----------
 
 renderToday();
+renderTasks();
 
 // Якщо застосунок лишався відкритим через північ — повертаємось на новий день
 document.addEventListener('visibilitychange', () => {

@@ -1187,3 +1187,335 @@ main {
 }
 
 .factor-stat-hint { margin: 8px 0 0; font-size: 0.75rem; }
+
+/* ---------- Задачі ---------- */
+
+.task-add { padding: 12px; }
+
+.task-add-row {
+  display: flex;
+  gap: 8px;
+}
+
+#task-input,
+.sheet-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+#task-input:focus,
+.sheet-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+#task-repeat-toggle.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+#task-add-btn {
+  flex: 0 0 44px;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.task-repeat-panel { margin-top: 12px; }
+
+.repeat-extra:empty { display: none; }
+
+.weekday-picker {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.weekday-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 0;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.weekday-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.interval-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+.interval-value {
+  min-width: 24px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.tasks-progress { margin: 4px 2px 12px; }
+
+.tasks-progress-text {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.tasks-progress-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.tasks-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-green));
+  transition: width 0.45s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.tasks-progress.complete .tasks-progress-text {
+  color: var(--accent-green);
+  font-weight: 600;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tasks-empty {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 36px 10px;
+  line-height: 1.6;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  transition: background 0.35s, border-color 0.35s;
+}
+
+.task.done {
+  background: rgba(95, 211, 160, 0.08);
+  border-color: rgba(95, 211, 160, 0.35);
+}
+
+.task-check {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--text-dim);
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.task-check svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #0f2a1f;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  transition: stroke-dashoffset 0.3s ease-out 0.08s;
+}
+
+.task.done .task-check {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+.task.done .task-check svg { stroke-dashoffset: 0; }
+
+.task.just-done .task-check { animation: task-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.task.just-done { animation: task-glow 0.7s ease-out; }
+
+@keyframes task-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+@keyframes task-glow {
+  0% { box-shadow: 0 0 0 0 rgba(95, 211, 160, 0.55); }
+  100% { box-shadow: 0 0 0 14px rgba(95, 211, 160, 0); }
+}
+
+.task-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Перекреслення «малюється» зліва направо */
+.task-title span {
+  background: linear-gradient(currentColor, currentColor) no-repeat 0 55% / 0 2px;
+  transition: background-size 0.35s ease-out, color 0.35s;
+  word-break: break-word;
+}
+
+.task.done .task-title span {
+  background-size: 100% 2px;
+  color: var(--text-dim);
+}
+
+.task-meta {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.task-meta:empty { display: none; }
+
+#fx-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 500;
+  overflow: hidden;
+}
+
+.fx-particle {
+  position: absolute;
+  border-radius: 2px;
+}
+
+.tasks-celebrate {
+  position: fixed;
+  left: 50%;
+  top: calc(80px + env(safe-area-inset-top));
+  z-index: 450;
+  transform: translate(-50%, -20px) scale(0.9);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-green));
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tasks-celebrate.show { animation: celebrate 2.4s ease-out forwards; }
+
+@keyframes celebrate {
+  0% { opacity: 0; transform: translate(-50%, -20px) scale(0.9); }
+  12% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+  20% { transform: translate(-50%, 0) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -10px) scale(0.95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task.just-done, .task.just-done .task-check { animation: none; }
+}
+
+/* ---------- Нижня шторка ---------- */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sheet[hidden] { display: none; }
+
+.sheet-panel {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  padding: 10px 16px calc(20px + env(safe-area-inset-bottom));
+  animation: sheet-up 0.25s ease-out;
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 0 auto 14px;
+}
+
+.sheet-label { margin-top: 16px; }
+
+.sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.sheet-actions button { padding: 11px; }
+
+.sheet-delete {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.danger-btn {
+  background: transparent;
+  border: 1px solid rgba(224, 86, 86, 0.5);
+  color: var(--danger);
+  border-radius: var(--radius);
+  padding: 10px;
+  cursor: pointer;
+}
+
+.danger-btn:hover { background: rgba(224, 86, 86, 0.1); }
