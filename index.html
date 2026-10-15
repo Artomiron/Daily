@@ -347,6 +347,20 @@
       <button type="button" class="app-modal-back" data-close-modal="settings-modal"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Назад</button>
       <h2 class="app-modal-title">Налаштування</h2>
     </div>
+    <div class="card" id="reminder-card">
+      <h2 class="card-title">Нагадування</h2>
+      <p id="reminder-hint" class="card-hint">Щодня нагадаю оцінити день.</p>
+      <div class="settings-row">
+        <label for="reminder-toggle">Щоденне нагадування</label>
+        <input type="checkbox" id="reminder-toggle" class="switch" role="switch">
+      </div>
+      <div class="settings-row">
+        <label for="reminder-time">Час</label>
+        <input type="time" id="reminder-time" class="time-input" value="23:00">
+      </div>
+      <button type="button" id="reminder-test" class="secondary-btn reminder-test" hidden>Надіслати тестове</button>
+      <p id="reminder-status" class="card-hint reminder-status"></p>
+    </div>
     <div class="card">
       <h2 class="card-title">Резервна копія</h2>
       <p class="card-hint">Записи зберігаються лише на цьому пристрої, в браузері. Нікуди не надсилаються. Час від часу експортуйте копію, щоб не втратити записи.</p>
@@ -370,6 +384,7 @@
 <script src="factors.js?v=1.3"></script>
 <script src="tasks.js?v=1.3"></script>
 <script src="shop.js?v=1.3"></script>
+<script src="reminders.js?v=1.3"></script>
 <script src="app.js?v=1.3"></script>
 </body>
 </html>

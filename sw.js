@@ -9,6 +9,7 @@ const APP_SHELL = [
   './factors.js',
   './tasks.js',
   './shop.js',
+  './reminders.js',
   './app.js',
   './manifest.json',
   './icons/icon-192.png',
@@ -49,4 +50,31 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => caches.match(event.request, { ignoreSearch: true }))
   );
+});
+
+// ---------- Щоденне нагадування ----------
+
+self.addEventListener('push', (event) => {
+  let message = { title: 'Daily', body: 'Як пройшов твій день?' };
+  try {
+    if (event.data) message = { ...message, ...event.data.json() };
+  } catch {}
+  event.waitUntil(self.registration.showNotification(message.title, {
+    body: message.body,
+    icon: './icons/icon-192.png',
+    badge: './icons/favicon-32.png',
+    tag: 'daily-reminder',
+    data: { url: './' },
+  }));
+});
+
+// Тап по сповіщенню — відкриваємо Daily (або переходимо у вже відкритий)
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const existing = windows.find((w) => w.url.startsWith(self.registration.scope));
+    if (existing) return existing.focus();
+    return self.clients.openWindow(event.notification.data?.url || './');
+  })());
 });

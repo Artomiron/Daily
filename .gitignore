@@ -1,2 +1,5 @@
 .DS_Store
 .claude/
+push-worker/.dev.vars
+push-worker/.wrangler/
+node_modules/

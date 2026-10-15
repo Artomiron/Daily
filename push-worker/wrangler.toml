@@ -1,0 +1,19 @@
+name = "daily-push"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Кожні 5 хвилин перевіряємо, кому настав час нагадування
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Підписки на нагадування. id заповнюється після: npx wrangler kv namespace create SUBS
+[[kv_namespaces]]
+binding = "SUBS"
+id = "REPLACE_WITH_KV_ID"
+
+[vars]
+ALLOWED_ORIGINS = "https://artomiron.github.io,http://localhost:8765"
+VAPID_SUBJECT = "https://artomiron.github.io/Daily/"
+# Публічний ключ VAPID (не секрет). Приватний — секрет VAPID_PRIVATE_JWK:
+#   npx wrangler secret put VAPID_PRIVATE_JWK
+VAPID_PUBLIC_KEY = "BGE1TM5hOfET7S2pwxyMeK_PZnnmzLO1WZIZa8GF-pgCal-bpIBExfZ135H86Z8C6KQdEZpnFf2oGkSpHX9D-pM"
