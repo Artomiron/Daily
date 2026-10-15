@@ -129,15 +129,12 @@ document.querySelectorAll('[data-close-modal]').forEach((btn) => {
 
 let currentDate = todayISO();
 
-const dateInput = document.getElementById('entry-date');
 const dateLabel = document.getElementById('date-label');
 
-dateInput.addEventListener('change', () => {
-  if (dateInput.value) setDate(dateInput.value);
+// Крапка під днем: зелена — день оцінено, сіра — є записи, але оцінки ще немає
+const todayWeek = createWeekPicker(document.getElementById('today-week'), {
+  statusFor: (date) => (entries[date]?.rated ? 'done' : entries[date] ? 'open' : 'none'),
 });
-document.getElementById('prev-day').addEventListener('click', () => setDate(shiftDate(currentDate, -1)));
-document.getElementById('next-day').addEventListener('click', () => setDate(shiftDate(currentDate, 1)));
-document.getElementById('go-today').addEventListener('click', () => setDate(todayISO()));
 
 // Обраний день спільний для «Сьогодні» і «Задач»
 function setDate(date) {
@@ -148,10 +145,10 @@ function setDate(date) {
 
 function renderToday() {
   const entry = getEntry(currentDate);
-  dateInput.value = currentDate;
+  todayWeek.render();
+  // Підпис дня видно лише під час кроків оцінки, коли тиждень сховано
   const isToday = currentDate === todayISO();
   dateLabel.textContent = isToday ? `Сьогодні, ${formatLongDate(currentDate)}` : capitalize(formatLongDate(currentDate));
-  document.getElementById('go-today').hidden = isToday;
 
   renderGratitude(entry.gratitude || []);
   showRateStep(entry.rated ? 'summary' : 'intro');
@@ -214,6 +211,7 @@ document.querySelectorAll('[data-next-step]').forEach((btn) => {
 
 document.getElementById('rate-done-btn').addEventListener('click', () => {
   updateEntry(currentDate, { rated: true });
+  todayWeek.render();
   renderGratitude(getEntry(currentDate).gratitude || []);
   showRateStep('summary');
 });

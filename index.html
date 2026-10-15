@@ -29,12 +29,7 @@
 
 <main>
   <section id="tab-today" class="tab-panel active">
-    <div class="date-controls">
-      <button id="prev-day" title="Попередній день">←</button>
-      <input type="date" id="entry-date">
-      <button id="next-day" title="Наступний день">→</button>
-      <button id="go-today" class="text-btn" title="Повернутись до сьогодні">Сьогодні</button>
-    </div>
+    <div id="today-week"></div>
     <p id="date-label" class="date-label"></p>
 
     <div id="rate-card" class="card rate-card">
@@ -111,24 +106,10 @@
   </section>
 
   <section id="tab-tasks" class="tab-panel">
-    <div class="tasks-topbar">
-      <label class="month-picker">
-        <span id="week-month"></span>
-        <svg class="month-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
-        <input type="date" id="tasks-date" aria-label="Обрати дату">
-      </label>
-      <button type="button" id="week-today" class="week-today" hidden>Сьогодні</button>
-      <button type="button" id="week-prev" class="week-nav" aria-label="Попередній тиждень">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
-      </button>
-      <button type="button" id="week-next" class="week-nav" aria-label="Наступний тиждень">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-      </button>
-      <button type="button" id="open-shop-btn" class="shop-btn" aria-label="Магазин винагород">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8.5h13l.9 10.6a2 2 0 0 1-2 2.2H6.6a2 2 0 0 1-2-2.2z"/><path d="M8.8 11.5V7a3.2 3.2 0 0 1 6.4 0v4.5"/></svg>
-      </button>
-    </div>
-    <div id="week-strip" class="week-strip" role="tablist" aria-label="Дні тижня"></div>
+    <div id="tasks-week"></div>
+    <button type="button" id="open-shop-btn" class="shop-btn" aria-label="Магазин винагород">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8.5h13l.9 10.6a2 2 0 0 1-2 2.2H6.6a2 2 0 0 1-2-2.2z"/><path d="M8.8 11.5V7a3.2 3.2 0 0 1 6.4 0v4.5"/></svg>
+    </button>
 
     <div class="tasks-header">
       <div id="tasks-progress" class="tasks-progress" hidden>
@@ -179,10 +160,19 @@
   </section>
 </main>
 
-<nav class="bottom-tabs">
-  <button class="tab-btn active" data-tab="today"><span class="tab-icon">✍️</span><span>Сьогодні</span></button>
-  <button class="tab-btn" data-tab="tasks"><span class="tab-icon">✅</span><span>Задачі</span></button>
-  <button class="tab-btn" data-tab="stats"><span class="tab-icon">📊</span><span>Статистика</span></button>
+<nav class="bottom-tabs" aria-label="Розділи">
+  <button class="tab-btn active" data-tab="today">
+    <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>
+    <span>Сьогодні</span>
+  </button>
+  <button class="tab-btn" data-tab="tasks">
+    <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5l1.5 1.5L8.5 5M4 12.5l1.5 1.5 3-3M4 18.5l1.5 1.5 3-3M11.5 6.5H20M11.5 12.5H20M11.5 18.5H20"/></svg>
+    <span>Задачі</span>
+  </button>
+  <button class="tab-btn" data-tab="stats">
+    <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/></svg>
+    <span>Статистика</span>
+  </button>
 </nav>
 
 <p id="save-status" class="save-status" aria-live="polite"></p>

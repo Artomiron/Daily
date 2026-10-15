@@ -250,13 +250,6 @@ document.getElementById('task-new-btn').addEventListener('click', () => openTask
 
 // ---------- Смужка тижня ----------
 
-const WEEK_SHORT = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-
-function weekStart(date) {
-  const day = fromISODate(date).getDay();
-  return shiftDate(date, -((day + 6) % 7));
-}
-
 // Стан дня для крапки під датою: немає задач / є невиконані / усе виконано
 function dayStatus(date) {
   const tasks = tasksForDate(date);
@@ -264,61 +257,9 @@ function dayStatus(date) {
   return tasks.every((t) => isTaskDone(t, date)) ? 'done' : 'open';
 }
 
-function renderWeekStrip() {
-  const today = todayISO();
-  const selected = fromISODate(currentDate);
-  const month = selected.toLocaleDateString('uk-UA', { month: 'long' });
-  const year = selected.getFullYear() !== new Date().getFullYear() ? ` ${selected.getFullYear()}` : '';
-  document.getElementById('week-month').textContent = capitalize(month) + year;
-  document.getElementById('week-today').hidden = currentDate === today;
-
-  const strip = document.getElementById('week-strip');
-  strip.innerHTML = '';
-  const start = weekStart(currentDate);
-  for (let i = 0; i < 7; i++) {
-    const date = shiftDate(start, i);
-    const d = fromISODate(date);
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.setAttribute('role', 'tab');
-    btn.setAttribute('aria-selected', date === currentDate);
-    btn.className = 'week-day' + (date === currentDate ? ' selected' : '') + (date === today ? ' today' : '');
-    btn.innerHTML = `
-      <span class="week-day-name">${WEEK_SHORT[d.getDay()]}</span>
-      <span class="week-day-num">${d.getDate()}</span>
-      <span class="week-day-dot ${dayStatus(date)}"></span>`;
-    btn.setAttribute('aria-label', capitalize(formatLongDate(date)));
-    btn.addEventListener('click', () => setDate(date));
-    strip.appendChild(btn);
-  }
-}
-
-document.getElementById('week-prev').addEventListener('click', () => setDate(shiftDate(currentDate, -7)));
-document.getElementById('week-next').addEventListener('click', () => setDate(shiftDate(currentDate, 7)));
-document.getElementById('week-today').addEventListener('click', () => setDate(todayISO()));
-
-const tasksDateInput = document.getElementById('tasks-date');
-tasksDateInput.addEventListener('change', () => {
-  if (tasksDateInput.value) setDate(tasksDateInput.value);
-});
-// На десктопі прозоре поле дати не відкриває календар саме — допомагаємо
-tasksDateInput.addEventListener('click', () => {
-  try {
-    tasksDateInput.showPicker?.();
-  } catch {}
-});
-
-// Свайп по смужці гортає тижні
-let weekTouchX = null;
-const weekStrip = document.getElementById('week-strip');
-weekStrip.addEventListener('touchstart', (e) => {
-  weekTouchX = e.touches[0].clientX;
-}, { passive: true });
-weekStrip.addEventListener('touchend', (e) => {
-  if (weekTouchX == null) return;
-  const dx = e.changedTouches[0].clientX - weekTouchX;
-  weekTouchX = null;
-  if (Math.abs(dx) > 50) setDate(shiftDate(currentDate, dx < 0 ? 7 : -7));
+const tasksWeek = createWeekPicker(document.getElementById('tasks-week'), {
+  statusFor: dayStatus,
+  extra: document.getElementById('open-shop-btn'),
 });
 
 // ---------- Список задач ----------
@@ -343,8 +284,7 @@ function setDoneCollapsed(value) {
 }
 
 function renderTasks() {
-  tasksDateInput.value = currentDate;
-  renderWeekStrip();
+  tasksWeek.render();
 
   const tasks = tasksForDate(currentDate);
   const doneCount = tasks.filter((t) => isTaskDone(t, currentDate)).length;
