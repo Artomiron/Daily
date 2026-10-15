@@ -624,12 +624,15 @@ main {
   transform: translate(-50%, 8px);
   z-index: 300;
   margin: 0;
-  padding: 6px 14px;
-  border-radius: 999px;
+  max-width: calc(100% - 48px);
+  width: max-content;
+  padding: 7px 14px;
+  border-radius: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text-dim);
   font-size: 0.8rem;
+  text-align: center;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s, transform 0.2s;
@@ -2914,3 +2917,51 @@ main {
 .reminder-status:empty { display: none; }
 
 .reminder-status { margin: 10px 0 0; }
+
+/* ---------- Пріоритет (прапорець) і штрафи ---------- */
+
+.task-flag {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin-left: 6px;
+  vertical-align: -2px;
+  fill: #ff9f0a;
+  stroke: #ff9f0a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.task.done .task-flag { opacity: 0.45; }
+
+.flag-icon {
+  stroke: #ff9f0a;
+  fill: rgba(255, 159, 10, 0.25);
+}
+
+.penalty-badge {
+  margin-left: 6px;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.task-meta .penalty-badge:first-child { margin-left: 0; }
+
+.task.penalized { border-color: rgba(224, 86, 86, 0.45); }
+
+.star-widget.in-debt #star-progress-text { color: var(--danger); }
+
+.star-widget.star-lose .star-shape { animation: star-lose 0.7s ease-in-out; }
+
+@keyframes star-lose {
+  0%, 100% { transform: translateX(0); filter: none; }
+  20% { transform: translateX(-5px) rotate(-8deg); filter: drop-shadow(0 0 8px rgba(224, 86, 86, 0.9)); }
+  40% { transform: translateX(5px) rotate(8deg); }
+  60% { transform: translateX(-4px) rotate(-5deg); }
+  80% { transform: translateX(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .star-widget.star-lose .star-shape { animation: none; }
+}

@@ -86,7 +86,7 @@ function renderShop() {
 function renderShopItem(item, balance) {
   const affordable = balance >= item.cost;
   // Прогрес до товару враховує й частково заповнену зірку — смужка рухається з кожною зірковою задачею
-  const saved = balance + (starPoints() % STAR_GOAL) / STAR_GOAL;
+  const saved = balancePoints() / STAR_GOAL;
   const share = Math.min(1, Math.max(0, saved / item.cost));
   const missing = item.cost - balance;
   const card = document.createElement('div');

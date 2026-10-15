@@ -2,8 +2,11 @@
 // Задача буває звичайною або зірковою (star: true): кожні STAR_GOAL виконаних зіркових задач
 // дають одну зірку. Прогрес зірки спільний для всіх днів і не скидається з кінцем дня.
 // Сховище: { tasks: [{ id, title, star, start, repeat, until, createdAt }], done: { date: [id] },
-//            skipped: { date: [id] }, starDone: { date: [id] } }
+//            skipped: { date: [id] }, starDone: { date: [id] }, penalties: { date: [id] }, settledThrough }
 // starDone — зараховані виконання зіркових задач; лишаються, навіть якщо задачу потім видалити.
+// Задача з прапорцем (flag: true) — високий пріоритет: якщо її не виконано до кінця дня,
+// від балансу знімається 1/5 зірки. Минулі дні «закриваються» при наступному запуску (penalties),
+// settledThrough — останній уже підбитий день.
 
 const STORAGE_TASKS = 'daily-tasks';
 
@@ -44,9 +47,16 @@ function loadTasks() {
   try {
     const raw = localStorage.getItem(STORAGE_TASKS);
     const data = raw ? JSON.parse(raw) : {};
-    return { tasks: data.tasks || [], done: data.done || {}, skipped: data.skipped || {}, starDone: data.starDone || {} };
+    return {
+      tasks: data.tasks || [],
+      done: data.done || {},
+      skipped: data.skipped || {},
+      starDone: data.starDone || {},
+      penalties: data.penalties || {},
+      settledThrough: data.settledThrough || null,
+    };
   } catch {
-    return { tasks: [], done: {}, skipped: {}, starDone: {} };
+    return { tasks: [], done: {}, skipped: {}, starDone: {}, penalties: {}, settledThrough: null };
   }
 }
 
@@ -56,8 +66,68 @@ function saveTasks() {
   localStorage.setItem(STORAGE_TASKS, JSON.stringify(taskStore));
 }
 
+// Бали (1/5 зірки): зараховані зіркові задачі мінус штрафи за невиконані задачі з прапорцем
 function starPoints() {
-  return Object.values(taskStore.starDone).reduce((sum, ids) => sum + ids.length, 0);
+  const count = (map) => Object.values(map).reduce((sum, ids) => sum + ids.length, 0);
+  return count(taskStore.starDone) - count(taskStore.penalties);
+}
+
+// Бали на балансі з урахуванням витраченого в магазині; може бути від'ємним — це «борг»
+function balancePoints() {
+  return starPoints() - starsSpent() * STAR_GOAL;
+}
+
+// ---------- Штрафи за пропущені пріоритетні задачі ----------
+
+// Підбиваємо підсумки всіх днів до вчора включно, які ще не закриті.
+// Повертає список нових штрафів, щоб показати користувачу, за що знято бали.
+function settlePenalties() {
+  const yesterday = shiftDate(todayISO(), -1);
+  // Перший запуск з цією функцією — минулі дні не штрафуємо
+  if (!taskStore.settledThrough) {
+    taskStore.settledThrough = yesterday;
+    saveTasks();
+    return [];
+  }
+  const missed = [];
+  for (let date = shiftDate(taskStore.settledThrough, 1); date <= yesterday; date = shiftDate(date, 1)) {
+    taskStore.tasks
+      .filter((task) => task.flag && taskOccursOn(task, date) && !isTaskDone(task, date))
+      .forEach((task) => {
+        taskStore.penalties[date] = [...new Set([...(taskStore.penalties[date] || []), task.id])];
+        missed.push({ task, date });
+      });
+  }
+  if (taskStore.settledThrough < yesterday) {
+    taskStore.settledThrough = yesterday;
+    saveTasks();
+  }
+  return missed;
+}
+
+function isPenalized(task, date) {
+  return (taskStore.penalties[date] || []).includes(task.id);
+}
+
+// Для вже закритого дня відмітка заднім числом знімає штраф, а знята відмітка — повертає
+function syncPenalty(task, date) {
+  if (!taskStore.settledThrough || date > taskStore.settledThrough) return;
+  const ids = new Set(taskStore.penalties[date] || []);
+  if (task.flag && !isTaskDone(task, date)) ids.add(task.id);
+  else ids.delete(task.id);
+  taskStore.penalties[date] = [...ids];
+  if (!taskStore.penalties[date].length) delete taskStore.penalties[date];
+}
+
+function announcePenalties(missed) {
+  if (!missed.length) return;
+  const text = missed.length === 1
+    ? `Пріоритетну задачу «${missed[0].task.title}» не виконано: −1/${STAR_GOAL} ★`
+    : `Не виконано пріоритетних задач: ${missed.length}. −${missed.length}/${STAR_GOAL} ★`;
+  setTimeout(() => {
+    showToast(text, 4000);
+    pulse(starWidget, 'star-lose');
+  }, 600);
 }
 
 function daysBetween(from, to) {
@@ -88,7 +158,9 @@ function isTaskDone(task, date) {
 function tasksForDate(date) {
   return taskStore.tasks
     .filter((task) => taskOccursOn(task, date))
-    .sort((a, b) => (isTaskDone(a, date) - isTaskDone(b, date)) || a.createdAt.localeCompare(b.createdAt));
+    .sort((a, b) => (isTaskDone(a, date) - isTaskDone(b, date))
+      || (Boolean(b.flag) - Boolean(a.flag))
+      || a.createdAt.localeCompare(b.createdAt));
 }
 
 function pluralDays(n) {
@@ -251,6 +323,7 @@ weekStrip.addEventListener('touchend', (e) => {
 
 // ---------- Список задач ----------
 
+const FLAG_SVG = '<svg class="task-flag" viewBox="0 0 24 24" aria-label="Високий пріоритет"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>';
 const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const REPEAT_SVG = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>';
 const STORAGE_DONE_COLLAPSED = 'daily-tasks-done-collapsed';
@@ -322,7 +395,7 @@ function renderTaskRow(task) {
   row.innerHTML = `
     <button type="button" class="task-check" role="checkbox" aria-checked="${done}"><span class="check-circle">${CHECK_SVG}</span></button>
     <button type="button" class="task-body">
-      <span class="task-title">${task.star ? '<i class="task-star" aria-label="Зіркова задача">★</i>' : ''}<span></span></span>
+      <span class="task-title">${task.star ? '<i class="task-star" aria-label="Зіркова задача">★</i>' : ''}<span></span>${task.flag ? FLAG_SVG : ''}</span>
       <span class="task-meta"></span>
     </button>`;
   row.querySelector('.task-title span').textContent = task.title;
@@ -330,6 +403,13 @@ function renderTaskRow(task) {
   if (meta) {
     row.querySelector('.task-meta').innerHTML = REPEAT_SVG;
     row.querySelector('.task-meta').append(meta);
+  }
+  if (isPenalized(task, currentDate)) {
+    row.classList.add('penalized');
+    const badge = document.createElement('span');
+    badge.className = 'penalty-badge';
+    badge.textContent = `Не виконано · −1/${STAR_GOAL} ★`;
+    row.querySelector('.task-meta').appendChild(badge);
   }
   row.querySelector('.task-check').setAttribute('aria-label', done ? `Позначити «${task.title}» невиконаною` : `Позначити «${task.title}» виконаною`);
   row.querySelector('.task-check').addEventListener('click', (e) => toggleTask(task, row, e.currentTarget));
@@ -464,6 +544,7 @@ function toggleTask(task, row, checkEl) {
   if (!nowDone) starDone.delete(task.id);
   taskStore.starDone[date] = [...starDone];
   if (!taskStore.starDone[date].length) delete taskStore.starDone[date];
+  syncPenalty(task, date);
   const pointsAfter = starPoints();
   saveTasks();
   if (!nowDone) {
@@ -474,6 +555,7 @@ function toggleTask(task, row, checkEl) {
       store.done[date] = [...new Set([...(store.done[date] || []), task.id])];
       if (wasStarCounted) store.starDone[date] = [...new Set([...(store.starDone[date] || []), task.id])];
       taskStore = store;
+      syncPenalty(task, date);
       saveTasks();
       renderTasks();
     });
@@ -589,13 +671,16 @@ const starWidget = document.getElementById('star-widget');
 let starAnimating = false;
 
 function renderStarWidget(options = {}) {
-  const points = starPoints();
-  const inProgress = options.full ? STAR_GOAL : points % STAR_GOAL;
+  const points = balancePoints();
+  const debt = points < 0;
+  const inProgress = options.full ? STAR_GOAL : debt ? 0 : points % STAR_GOAL;
   // Лічильник — баланс: зароблені зірки мінус витрачені в магазині
   const total = Math.max(0, starBalance() - (options.full ? 1 : 0));
   starWidget.querySelector('.star-fill').style.height = `${STAR_FILL_HEIGHTS[inProgress]}%`;
   starWidget.classList.toggle('is-full', inProgress === STAR_GOAL);
-  document.getElementById('star-progress-text').textContent = `${inProgress}/${STAR_GOAL}`;
+  starWidget.classList.toggle('in-debt', debt);
+  // Борг показуємо як від'ємний прогрес: наступні зіркові задачі спершу його закривають
+  document.getElementById('star-progress-text').textContent = debt ? `−${-points}/${STAR_GOAL}` : `${inProgress}/${STAR_GOAL}`;
   document.getElementById('star-total').textContent = total;
   starWidget.setAttribute('aria-label', `Зірка: ${inProgress} з ${STAR_GOAL}. Зірок на балансі: ${total}`);
 }
@@ -608,7 +693,8 @@ function pulse(el, className) {
 
 // Золота зірочка летить з чекбокса до великої зірки, потім та заповнюється
 function animateStarGain(fromEl, points) {
-  const completesStar = points % STAR_GOAL === 0;
+  // Повна зірка — лише якщо баланс додатний (закриття «боргу» не святкуємо)
+  const completesStar = balancePoints() > 0 && points % STAR_GOAL === 0;
   starAnimating = true;
   const arrive = () => {
     renderStarWidget({ full: completesStar });
@@ -754,7 +840,12 @@ starPopup.addEventListener('click', (e) => {
 });
 
 starWidget.addEventListener('click', () => {
-  const left = STAR_GOAL - (starPoints() % STAR_GOAL);
+  const points = balancePoints();
+  if (points < 0) {
+    showToast(`★ Борг ${-points}/${STAR_GOAL}: наступні зіркові задачі спершу закриють його`, 2600);
+    return;
+  }
+  const left = STAR_GOAL - (points % STAR_GOAL);
   showToast(`★ До нової зірки: ще ${left} з ${STAR_GOAL} зіркових задач`, 2600);
 });
 
@@ -768,6 +859,7 @@ let sheetTask = null;
 let sheetRepeat = null;
 let sheetStar = false;
 let sheetDate = null;
+const sheetFlag = document.getElementById('task-sheet-flag');
 const sheetDateInput = document.getElementById('task-sheet-date');
 const sheetRepeatRow = document.getElementById('task-sheet-repeat-row');
 const sheetRepeatList = document.getElementById('task-sheet-repeat');
@@ -795,6 +887,7 @@ function openTaskSheet(task) {
   sheetTitleInput.value = task ? task.title : '';
   sheetStar = Boolean(task?.star);
   sheetDate = task ? task.start : currentDate;
+  sheetFlag.checked = Boolean(task?.flag);
   renderSheetType();
   updateSheetSave();
   renderSheetDate();
@@ -922,6 +1015,7 @@ function saveTaskSheet() {
   if (sheetTask) {
     sheetTask.title = title;
     sheetTask.star = sheetStar;
+    sheetTask.flag = sheetFlag.checked;
     sheetTask.repeat = sheetRepeat;
     sheetTask.start = sheetDate;
   } else {
@@ -929,6 +1023,7 @@ function saveTaskSheet() {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       title,
       star: sheetStar,
+      flag: sheetFlag.checked,
       start: sheetDate,
       repeat: sheetRepeat,
       until: null,
@@ -970,5 +1065,7 @@ function mergeTaskStores(existing, incoming) {
     done: mergeMap(existing.done, incoming.done),
     skipped: mergeMap(existing.skipped, incoming.skipped),
     starDone: mergeMap(existing.starDone, incoming.starDone),
+    penalties: mergeMap(existing.penalties, incoming.penalties),
+    settledThrough: [existing.settledThrough, incoming.settledThrough].filter(Boolean).sort().pop() || null,
   };
 }

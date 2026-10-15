@@ -750,12 +750,14 @@ function mergeEntries(existing, incoming) {
 // ---------- Ініціалізація ----------
 
 renderToday();
+announcePenalties(settlePenalties());
 renderTasks();
 
 // Якщо застосунок лишався відкритим через північ — повертаємось на новий день
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
   const today = todayISO();
+  if (lastSeenToday !== today) announcePenalties(settlePenalties());
   if (lastSeenToday !== today && currentDate === lastSeenToday) setDate(today);
   lastSeenToday = today;
 });
