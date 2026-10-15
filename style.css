@@ -1490,7 +1490,11 @@ main {
 
 .sheet {
   position: fixed;
-  inset: 0;
+  left: 0;
+  right: 0;
+  /* Рівно видима частина екрана — над клавіатурою, коли вона відкрита (див. ui.js) */
+  top: var(--vv-top, 0px);
+  height: var(--vv-height, 100%);
   z-index: 250;
   background: rgba(0, 0, 0, 0.55);
   display: flex;
@@ -1503,7 +1507,8 @@ main {
 .sheet-panel {
   width: 100%;
   max-width: 560px;
-  max-height: 90dvh;
+  max-height: calc(var(--vv-height, 100dvh) - 12px);
+  overscroll-behavior: contain;
   overflow-y: auto;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -3002,3 +3007,6 @@ main {
 @media (prefers-reduced-motion: reduce) {
   .star-widget.star-lose .star-shape { animation: none; }
 }
+
+/* З відкритою клавіатурою нижній відступ під «смужку» iPhone не потрібен */
+.keyboard-open .sheet-panel { padding-bottom: 16px; }

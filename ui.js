@@ -170,3 +170,30 @@ function createWeekPicker(root, { statusFor, extra } = {}) {
 
   return { render };
 }
+
+// ---------- Клавіатура і шторки ----------
+// На iOS і в Android Chrome клавіатура не зменшує сторінку, а лише ховає її низ, тож прикріплена
+// до низу шторка опиняється під клавіатурою. Стежимо за видимою областю (visualViewport) і передаємо
+// її в CSS: шторки займають рівно видиму частину екрана й стоять над клавіатурою.
+
+function trackVisibleViewport() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const root = document.documentElement;
+  const update = () => {
+    root.style.setProperty('--vv-top', `${vv.offsetTop}px`);
+    root.style.setProperty('--vv-height', `${vv.height}px`);
+    // Клавіатура відкрита, якщо видима область помітно нижча за вікно
+    root.classList.toggle('keyboard-open', window.innerHeight - vv.height > 120);
+    // Поле, в яке друкують, тримаємо у видимій частині шторки
+    const field = document.activeElement;
+    if (field?.closest?.('.sheet-panel') && /^(INPUT|TEXTAREA)$/.test(field.tagName)) {
+      field.scrollIntoView({ block: 'nearest' });
+    }
+  };
+  vv.addEventListener('resize', update);
+  vv.addEventListener('scroll', update);
+  update();
+}
+
+trackVisibleViewport();
