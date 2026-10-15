@@ -3,7 +3,7 @@
 // а той у потрібний час надсилає сповіщення. Записи щоденника на сервер не потрапляють.
 
 // Адреса Cloudflare Worker з push-worker/. Порожня — нагадування ще не налаштовані.
-const PUSH_API_URL = '';
+const PUSH_API_URL = 'https://daily-push.redtom93-e7f.workers.dev';
 const STORAGE_REMINDER = 'daily-reminder';
 const DEFAULT_REMINDER_TIME = '23:00';
 
