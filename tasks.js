@@ -264,7 +264,7 @@ const tasksWeek = createWeekPicker(document.getElementById('tasks-week'), {
 
 // ---------- Список задач ----------
 
-const FLAG_SVG = '<svg class="task-flag" viewBox="0 0 24 24" aria-label="Високий пріоритет"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>';
+const FLAG_SVG = '<svg class="task-flag" viewBox="0 0 24 24" role="img" aria-label="Високий пріоритет"><rect x="4" y="2.5" width="2.2" height="19" rx="1.1"/><path d="M6.2 3.5h12.3c.5 0 .8.6.5 1l-2.6 3.8 2.6 3.8c.3.4 0 1-.5 1H6.2z"/></svg>';
 const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const REPEAT_SVG = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>';
 const STORAGE_DONE_COLLAPSED = 'daily-tasks-done-collapsed';
@@ -335,7 +335,7 @@ function renderTaskRow(task) {
   row.innerHTML = `
     <button type="button" class="task-check" role="checkbox" aria-checked="${done}"><span class="check-circle">${CHECK_SVG}</span></button>
     <button type="button" class="task-body">
-      <span class="task-title">${task.star ? '<i class="task-star" aria-label="Зіркова задача">★</i>' : ''}<span></span>${task.flag ? FLAG_SVG : ''}</span>
+      <span class="task-title">${task.flag ? FLAG_SVG : ''}${task.star ? '<i class="task-star" aria-label="Зіркова задача">★</i>' : ''}<span></span></span>
       <span class="task-meta"></span>
     </button>`;
   row.querySelector('.task-title span').textContent = task.title;

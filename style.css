@@ -2964,22 +2964,19 @@ main {
 
 .task-flag {
   flex: 0 0 auto;
-  width: 15px;
-  height: 15px;
-  margin-left: 6px;
-  vertical-align: -2px;
-  fill: #ff9f0a;
-  stroke: #ff9f0a;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  vertical-align: -3px;
+  /* Червоний, щоб не плутати з золотими зірками */
+  fill: #e5484d;
 }
 
 .task.done .task-flag { opacity: 0.45; }
 
 .flag-icon {
-  stroke: #ff9f0a;
-  fill: rgba(255, 159, 10, 0.25);
+  fill: #e5484d;
+  stroke: none;
 }
 
 .penalty-badge {
