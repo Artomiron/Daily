@@ -760,11 +760,26 @@ main {
 .app-modal-back {
   flex: 0 0 auto;
   min-height: 44px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 7px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: -8px;
+  padding: 0 8px 0 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 1.02rem;
   cursor: pointer;
+}
+
+.back-chevron {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .app-modal-title {
@@ -1276,7 +1291,7 @@ main {
 }
 
 .task.done {
-  background: transparent;
+  background: var(--bg);
   border-color: var(--border);
 }
 
@@ -2608,4 +2623,230 @@ main {
   font-size: 0.75rem;
   color: var(--text-dim);
   white-space: nowrap;
+}
+
+/* ---------- Тост зі «Скасувати» ---------- */
+
+.undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabbar-h) + 84px + env(safe-area-inset-bottom));
+  z-index: 470;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100% - 32px);
+  padding: 6px 6px 6px 16px;
+  border-radius: 999px;
+  background: #2c2c2e;
+  border: 1px solid #3a3a3c;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-size: 0.9rem;
+  transform: translate(-50%, 12px);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.undo-toast[hidden] { display: none; }
+
+.undo-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+#undo-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.undo-btn {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 18px;
+  background: rgba(155, 125, 255, 0.18);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* ---------- Шторка: ручка, рядки списку, вибір повтору ---------- */
+
+.sheet-handle {
+  width: 38px;
+  height: 5px;
+  border-radius: 3px;
+  background: #48484a;
+  margin: 2px auto 4px;
+}
+
+.sheet-panel { touch-action: pan-y; }
+
+.sheet-rows {
+  margin-top: 14px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.sheet-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  background: none;
+  border: none;
+  border-top: 0.5px solid var(--border);
+  color: var(--text);
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sheet-row:first-child { border-top: none; }
+
+.sheet-row:active { background: rgba(255, 255, 255, 0.04); }
+
+.sheet-row-icon {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sheet-row-title { flex: 1 1 auto; }
+
+.sheet-row-value {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.sheet-row-chevron {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--text-dim);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s;
+}
+
+.sheet-row.open .sheet-row-chevron { transform: rotate(90deg); }
+
+/* Прозоре поле дати поверх рядка — тап відкриває системний календар */
+.sheet-row input[type="date"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.repeat-list {
+  border-top: 0.5px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.repeat-list[hidden] { display: none; }
+
+.repeat-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px 0 44px;
+  background: none;
+  border: none;
+  border-top: 0.5px solid var(--border);
+  color: var(--text);
+  font-size: 0.96rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repeat-option:first-child { border-top: none; }
+
+.repeat-check {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.repeat-list .repeat-extra {
+  padding: 4px 14px 12px 44px;
+  margin-top: 0;
+}
+
+/* ---------- Свайпи по задачах ---------- */
+
+.task-swipe {
+  position: relative;
+  border-radius: 14px;
+}
+
+.task-swipe.swiping { overflow: hidden; }
+
+.task-swipe .task {
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+}
+
+.swipe-action {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  opacity: 0;
+}
+
+.swipe-action svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.swipe-done {
+  justify-content: flex-start;
+  background: #2fae7a;
+}
+
+.swipe-delete {
+  justify-content: flex-end;
+  background: var(--danger);
+}
+
+.task-swipe.swiping.to-right .swipe-done { opacity: 1; }
+.task-swipe.swiping:not(.to-right) .swipe-delete { opacity: 1; }
+.task-swipe.armed .swipe-action svg { transform: scale(1.3); }
+
+.task-swipe.removing {
+  height: 0 !important;
+  margin-bottom: -8px;
+  opacity: 0;
+  transition: height 0.25s ease, margin 0.25s ease, opacity 0.2s;
 }

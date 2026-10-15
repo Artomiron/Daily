@@ -221,7 +221,7 @@ function openShopSheet(item) {
   updateShopSave();
   renderShopEmojis();
   renderShopCost();
-  renderShopDelete(false);
+  renderShopDelete();
   shopSheet.hidden = false;
   if (!item) shopTitleInput.focus();
 }
@@ -272,30 +272,29 @@ function changeShopCost(delta) {
 document.getElementById('shop-cost-minus').addEventListener('click', () => changeShopCost(-1));
 document.getElementById('shop-cost-plus').addEventListener('click', () => changeShopCost(1));
 
-function renderShopDelete(confirming) {
+// Видалення без підтвердження — з тостом «Скасувати»
+function renderShopDelete() {
   const box = document.getElementById('shop-sheet-delete');
   box.innerHTML = '';
   if (!shopSheetItem) return;
-  const make = (text, cls, onClick) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = cls;
-    btn.textContent = text;
-    btn.addEventListener('click', onClick);
-    box.appendChild(btn);
-  };
-  if (!confirming) {
-    make('Видалити товар', 'sheet-danger', () => renderShopDelete(true));
-    return;
-  }
-  make('Так, видалити', 'sheet-danger', () => {
-    shopStore.items = shopStore.items.filter((i) => i.id !== shopSheetItem.id);
+  const item = shopSheetItem;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'sheet-danger';
+  btn.textContent = 'Видалити товар';
+  btn.addEventListener('click', () => {
+    const before = JSON.stringify(shopStore);
+    shopStore.items = shopStore.items.filter((i) => i.id !== item.id);
     saveShop();
-    flashSaved();
     closeShopSheet();
     renderShop();
+    showUndo('Товар видалено', () => {
+      shopStore = JSON.parse(before);
+      saveShop();
+      renderShop();
+    });
   });
-  make('Не видаляти', 'sheet-plain', () => renderShopDelete(false));
+  box.appendChild(btn);
 }
 
 function saveShopSheet() {
@@ -316,6 +315,7 @@ function saveShopSheet() {
 }
 
 shopSaveBtn.addEventListener('click', saveShopSheet);
+attachSheetDrag(shopSheet, closeShopSheet);
 document.getElementById('shop-sheet-cancel').addEventListener('click', closeShopSheet);
 shopSheet.addEventListener('click', (e) => {
   if (e.target === shopSheet) closeShopSheet();

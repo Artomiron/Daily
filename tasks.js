@@ -8,7 +8,7 @@
 const STORAGE_TASKS = 'daily-tasks';
 
 const REPEAT_TYPES = [
-  { id: 'none', label: 'Не повторювати' },
+  { id: 'none', label: 'Ніколи' },
   { id: 'daily', label: 'Щодня' },
   { id: 'weekdays', label: 'По буднях' },
   { id: 'weekly', label: 'Дні тижня' },
@@ -115,51 +115,61 @@ function defaultRepeat(type, date) {
   return { type };
 }
 
-// Редактор повтору: тип + дні тижня або інтервал. Використовується і при додаванні, і в редагуванні
-function renderRepeatEditor(el, repeat, date, onChange) {
-  el.innerHTML = `
-    <div class="chips repeat-types"></div>
-    <div class="repeat-extra"></div>`;
+// Вибір повтору — список з галочкою, як у «Нагадуваннях»; під обраним типом — дні тижня або інтервал
+const ROW_CHECK_SVG = '<svg class="repeat-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
-  const types = el.querySelector('.repeat-types');
+function renderRepeatList(el, repeat, date, onChange) {
+  el.innerHTML = '';
   REPEAT_TYPES.forEach((type) => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'chip' + (repeat.type === type.id ? ' active' : '');
-    chip.textContent = type.label;
-    chip.addEventListener('click', () => onChange(defaultRepeat(type.id, date)));
-    types.appendChild(chip);
-  });
-
-  const extra = el.querySelector('.repeat-extra');
-  if (repeat.type === 'weekly') {
-    extra.className = 'repeat-extra weekday-picker';
-    WEEKDAYS.forEach((w) => {
-      const selected = repeat.days.includes(w.d);
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'weekday-btn' + (selected ? ' active' : '');
-      btn.textContent = w.short;
-      btn.addEventListener('click', () => {
-        const days = selected ? repeat.days.filter((d) => d !== w.d) : [...repeat.days, w.d];
-        if (days.length) onChange({ ...repeat, days });
-      });
-      extra.appendChild(btn);
+    const active = repeat.type === type.id;
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'repeat-option' + (active ? ' active' : '');
+    row.setAttribute('role', 'radio');
+    row.setAttribute('aria-checked', active);
+    row.innerHTML = `<span></span>${active ? ROW_CHECK_SVG : ''}`;
+    row.querySelector('span').textContent = type.label;
+    row.addEventListener('click', () => {
+      if (!active) onChange(defaultRepeat(type.id, date));
     });
-  } else if (repeat.type === 'interval') {
-    extra.className = 'repeat-extra interval-picker';
-    extra.innerHTML = `
-      <span>Кожні</span>
-      <button type="button" class="sleep-btn interval-minus" aria-label="Менше">−</button>
-      <b class="interval-value">${repeat.interval}</b>
-      <button type="button" class="sleep-btn interval-plus" aria-label="Більше">+</button>
-      <span>${pluralDays(repeat.interval)}</span>`;
-    const change = (delta) => onChange({ ...repeat, interval: Math.min(INTERVAL_MAX, Math.max(INTERVAL_MIN, repeat.interval + delta)) });
-    extra.querySelector('.interval-minus').addEventListener('click', () => change(-1));
-    extra.querySelector('.interval-plus').addEventListener('click', () => change(1));
-  } else {
-    extra.className = 'repeat-extra';
-  }
+    el.appendChild(row);
+
+    if (active && type.id === 'weekly') el.appendChild(renderWeekdayPicker(repeat, onChange));
+    if (active && type.id === 'interval') el.appendChild(renderIntervalPicker(repeat, onChange));
+  });
+}
+
+function renderWeekdayPicker(repeat, onChange) {
+  const box = document.createElement('div');
+  box.className = 'repeat-extra weekday-picker';
+  WEEKDAYS.forEach((w) => {
+    const selected = repeat.days.includes(w.d);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'weekday-btn' + (selected ? ' active' : '');
+    btn.textContent = w.short;
+    btn.addEventListener('click', () => {
+      const days = selected ? repeat.days.filter((d) => d !== w.d) : [...repeat.days, w.d];
+      if (days.length) onChange({ ...repeat, days });
+    });
+    box.appendChild(btn);
+  });
+  return box;
+}
+
+function renderIntervalPicker(repeat, onChange) {
+  const box = document.createElement('div');
+  box.className = 'repeat-extra interval-picker';
+  box.innerHTML = `
+    <span>Кожні</span>
+    <button type="button" class="sleep-btn interval-minus" aria-label="Менше">−</button>
+    <b class="interval-value">${repeat.interval}</b>
+    <button type="button" class="sleep-btn interval-plus" aria-label="Більше">+</button>
+    <span>${pluralDays(repeat.interval)}</span>`;
+  const change = (delta) => onChange({ ...repeat, interval: Math.min(INTERVAL_MAX, Math.max(INTERVAL_MIN, repeat.interval + delta)) });
+  box.querySelector('.interval-minus').addEventListener('click', () => change(-1));
+  box.querySelector('.interval-plus').addEventListener('click', () => change(1));
+  return box;
 }
 
 // ---------- Вкладка «Задачі» ----------
@@ -324,7 +334,97 @@ function renderTaskRow(task) {
   row.querySelector('.task-check').setAttribute('aria-label', done ? `Позначити «${task.title}» невиконаною` : `Позначити «${task.title}» виконаною`);
   row.querySelector('.task-check').addEventListener('click', (e) => toggleTask(task, row, e.currentTarget));
   row.querySelector('.task-body').addEventListener('click', () => openTaskSheet(task));
-  return row;
+  return attachTaskSwipe(row, task, done);
+}
+
+// ---------- Свайпи по задачі ----------
+// Вправо — виконати (або повернути), вліво — видалити, як у системних списках iOS.
+
+const SWIPE_THRESHOLD = 90;
+
+function attachTaskSwipe(row, task, done) {
+  const wrap = document.createElement('div');
+  wrap.className = 'task-swipe';
+  wrap.innerHTML = `
+    <div class="swipe-action swipe-done" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>${done ? 'Повернути' : 'Виконано'}</span>
+    </div>
+    <div class="swipe-action swipe-delete" aria-hidden="true">
+      <span>Видалити</span><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>
+    </div>`;
+  wrap.appendChild(row);
+
+  let x0 = 0;
+  let y0 = 0;
+  let dx = 0;
+  let mode = null; // null — ще не визначили, 'swipe' — горизонтальний жест, 'scroll' — прокрутка
+  let lastSwipeAt = 0;
+
+  // Жест не повинен ще й відкрити шторку чи натиснути чекбокс
+  row.addEventListener('click', (e) => {
+    if (Date.now() - lastSwipeAt < 400) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }, { capture: true });
+
+  row.addEventListener('touchstart', (e) => {
+    x0 = e.touches[0].clientX;
+    y0 = e.touches[0].clientY;
+    dx = 0;
+    mode = null;
+    row.style.transition = 'none';
+  }, { passive: true });
+
+  row.addEventListener('touchmove', (e) => {
+    const mx = e.touches[0].clientX - x0;
+    const my = e.touches[0].clientY - y0;
+    if (!mode) {
+      if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my)) mode = 'swipe';
+      else if (Math.abs(my) > 10) mode = 'scroll';
+    }
+    if (mode !== 'swipe') return;
+    e.preventDefault();
+    dx = mx;
+    row.style.transform = `translateX(${dx}px)`;
+    wrap.classList.add('swiping');
+    wrap.classList.toggle('to-right', dx > 0);
+    wrap.classList.toggle('armed', Math.abs(dx) > SWIPE_THRESHOLD);
+  }, { passive: false });
+
+  const end = () => {
+    if (mode !== 'swipe') return;
+    mode = null;
+    lastSwipeAt = Date.now();
+    row.style.transition = 'transform 0.25s ease-out';
+
+    if (dx > SWIPE_THRESHOLD) {
+      row.style.transform = '';
+      setTimeout(() => {
+        wrap.classList.remove('swiping', 'to-right', 'armed');
+        toggleTask(task, row, row.querySelector('.task-check'));
+      }, 180);
+    } else if (dx < -SWIPE_THRESHOLD) {
+      row.style.transform = 'translateX(-110%)';
+      wrap.style.height = `${wrap.offsetHeight}px`;
+      requestAnimationFrame(() => wrap.classList.add('removing'));
+      setTimeout(() => deleteTaskBySwipe(task), 260);
+    } else {
+      row.style.transform = '';
+      setTimeout(() => wrap.classList.remove('swiping', 'to-right', 'armed'), 250);
+    }
+  };
+  row.addEventListener('touchend', end);
+  row.addEventListener('touchcancel', end);
+  return wrap;
+}
+
+function deleteTaskBySwipe(task) {
+  if (task.repeat.type !== 'none') {
+    withTaskUndo('Задачу прибрано з цього дня', () => deleteTaskOccurrence(task, currentDate));
+  } else {
+    withTaskUndo('Задачу видалено', () => deleteTaskFrom(task, task.start));
+  }
 }
 
 // Порожній стан за HIG: іконка, короткий заголовок і пояснення; дія — кнопка «Нова задача» внизу
@@ -359,12 +459,25 @@ function toggleTask(task, row, checkEl) {
   // Зіркові бали: зараховуємо при відмітці, повертаємо при знятті відмітки
   const pointsBefore = starPoints();
   const starDone = new Set(taskStore.starDone[date] || []);
+  const wasStarCounted = starDone.has(task.id);
   if (nowDone && task.star) starDone.add(task.id);
   if (!nowDone) starDone.delete(task.id);
   taskStore.starDone[date] = [...starDone];
   if (!taskStore.starDone[date].length) delete taskStore.starDone[date];
   const pointsAfter = starPoints();
   saveTasks();
+  if (!nowDone) {
+    // Зняту відмітку легко повернути — без анімацій і повторного нарахування зірок
+    const restored = JSON.stringify(taskStore);
+    showUndo('Відмітку знято', () => {
+      const store = JSON.parse(restored);
+      store.done[date] = [...new Set([...(store.done[date] || []), task.id])];
+      if (wasStarCounted) store.starDone[date] = [...new Set([...(store.starDone[date] || []), task.id])];
+      taskStore = store;
+      saveTasks();
+      renderTasks();
+    });
+  }
 
   row.classList.toggle('done', nowDone);
   checkEl.setAttribute('aria-checked', nowDone);
@@ -654,6 +767,10 @@ const sheetSaveBtn = document.getElementById('task-sheet-save');
 let sheetTask = null;
 let sheetRepeat = null;
 let sheetStar = false;
+let sheetDate = null;
+const sheetDateInput = document.getElementById('task-sheet-date');
+const sheetRepeatRow = document.getElementById('task-sheet-repeat-row');
+const sheetRepeatList = document.getElementById('task-sheet-repeat');
 
 function renderSheetType() {
   document.querySelectorAll('#task-sheet-type .segment').forEach((btn) => {
@@ -677,10 +794,13 @@ function openTaskSheet(task) {
   sheetSaveBtn.textContent = task ? 'Готово' : 'Додати';
   sheetTitleInput.value = task ? task.title : '';
   sheetStar = Boolean(task?.star);
+  sheetDate = task ? task.start : currentDate;
   renderSheetType();
   updateSheetSave();
+  renderSheetDate();
+  setRepeatListOpen(false);
   renderSheetRepeat();
-  if (task) renderSheetDelete(false);
+  if (task) renderSheetDelete();
   else document.getElementById('task-sheet-delete').innerHTML = '';
   taskSheet.hidden = false;
   if (!task) sheetTitleInput.focus();
@@ -704,54 +824,77 @@ sheetTitleInput.addEventListener('keydown', (e) => {
   }
 });
 
+function renderSheetDate() {
+  // Для повторюваної задачі дата — це початок серії
+  document.getElementById('task-sheet-date-title').textContent = sheetRepeat.type === 'none' ? 'Дата' : 'Починаючи з';
+  document.getElementById('task-sheet-date-label').textContent = capitalize(formatDate(sheetDate, 'short'));
+  sheetDateInput.value = sheetDate;
+}
+
+sheetDateInput.addEventListener('change', () => {
+  if (!sheetDateInput.value) return;
+  sheetDate = sheetDateInput.value;
+  renderSheetDate();
+});
+sheetDateInput.addEventListener('click', () => {
+  try {
+    sheetDateInput.showPicker?.();
+  } catch {}
+});
+
+function setRepeatListOpen(open) {
+  sheetRepeatList.hidden = !open;
+  sheetRepeatRow.classList.toggle('open', open);
+  sheetRepeatRow.setAttribute('aria-expanded', open);
+}
+
+sheetRepeatRow.addEventListener('click', () => setRepeatListOpen(sheetRepeatList.hidden));
+
 function renderSheetRepeat() {
-  renderRepeatEditor(document.getElementById('task-sheet-repeat'), sheetRepeat, sheetTask ? sheetTask.start : currentDate, (repeat) => {
+  document.getElementById('task-sheet-repeat-label').textContent = repeatLabel(sheetRepeat) || 'Ніколи';
+  renderRepeatList(sheetRepeatList, sheetRepeat, sheetDate, (repeat) => {
     sheetRepeat = repeat;
     renderSheetRepeat();
+    renderSheetDate();
   });
 }
 
-// Видалення: для повторюваної задачі — лише цей день або цей і наступні
-function renderSheetDelete(confirming) {
+// Видалення без підтверджень: одразу видаляємо й пропонуємо «Скасувати».
+// Для повторюваної задачі — вибір: лише цей день або цей і всі наступні.
+function renderSheetDelete() {
   const box = document.getElementById('task-sheet-delete');
   box.innerHTML = '';
-  const recurring = sheetTask.repeat.type !== 'none';
-  if (!confirming) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'sheet-danger';
-    btn.textContent = 'Видалити задачу';
-    btn.addEventListener('click', () => renderSheetDelete(true));
-    box.appendChild(btn);
-    return;
-  }
-
-  const options = recurring
+  const task = sheetTask;
+  const options = task.repeat.type !== 'none'
     ? [
-      { text: 'Лише в цей день', action: () => deleteTaskOccurrence(sheetTask, currentDate) },
-      { text: 'У цей і всі наступні дні', action: () => deleteTaskFrom(sheetTask, currentDate) },
+      { text: 'Видалити лише в цей день', toast: 'Задачу прибрано з цього дня', action: () => deleteTaskOccurrence(task, currentDate) },
+      { text: 'Видалити в цей і всі наступні дні', toast: 'Задачу видалено з цього дня й далі', action: () => deleteTaskFrom(task, currentDate) },
     ]
-    : [{ text: 'Так, видалити', action: () => deleteTaskFrom(sheetTask, sheetTask.start) }];
+    : [{ text: 'Видалити задачу', toast: 'Задачу видалено', action: () => deleteTaskFrom(task, task.start) }];
   options.forEach((option) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'sheet-danger';
     btn.textContent = option.text;
     btn.addEventListener('click', () => {
-      option.action();
-      saveTasks();
-      flashSaved();
       closeTaskSheet();
-      renderTasks();
+      withTaskUndo(option.toast, option.action);
     });
     box.appendChild(btn);
   });
-  const cancel = document.createElement('button');
-  cancel.type = 'button';
-  cancel.className = 'sheet-plain';
-  cancel.textContent = 'Не видаляти';
-  cancel.addEventListener('click', () => renderSheetDelete(false));
-  box.appendChild(cancel);
+}
+
+// Виконує зміну задач і показує тост, який повертає попередній стан
+function withTaskUndo(text, change) {
+  const before = JSON.stringify(taskStore);
+  change();
+  saveTasks();
+  renderTasks();
+  showUndo(text, () => {
+    taskStore = JSON.parse(before);
+    saveTasks();
+    renderTasks();
+  });
 }
 
 function deleteTaskOccurrence(task, date) {
@@ -780,24 +923,28 @@ function saveTaskSheet() {
     sheetTask.title = title;
     sheetTask.star = sheetStar;
     sheetTask.repeat = sheetRepeat;
+    sheetTask.start = sheetDate;
   } else {
     taskStore.tasks.push({
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       title,
       star: sheetStar,
-      start: currentDate,
+      start: sheetDate,
       repeat: sheetRepeat,
       until: null,
       createdAt: new Date().toISOString(),
     });
   }
+  const addedElsewhere = !sheetTask && sheetDate !== currentDate;
   saveTasks();
-  flashSaved();
+  if (addedElsewhere) showToast(`Додано на ${formatDate(sheetDate, 'long')}`, 2200);
+  else flashSaved();
   closeTaskSheet();
   renderTasks();
 }
 
 sheetSaveBtn.addEventListener('click', saveTaskSheet);
+attachSheetDrag(taskSheet, closeTaskSheet);
 
 document.getElementById('task-sheet-cancel').addEventListener('click', closeTaskSheet);
 taskSheet.addEventListener('click', (e) => {

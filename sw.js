@@ -3,6 +3,7 @@ const APP_SHELL = [
   './',
   './index.html',
   './style.css',
+  './ui.js',
   './circumplex.js',
   './body.js',
   './factors.js',

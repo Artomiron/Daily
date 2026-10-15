@@ -187,12 +187,17 @@
 
 <p id="save-status" class="save-status" aria-live="polite"></p>
 
+<div id="undo-toast" class="undo-toast" role="status" hidden>
+  <span id="undo-text"></span>
+  <button type="button" id="undo-btn" class="undo-btn">Скасувати</button>
+</div>
+
 <div id="tasks-celebrate" class="tasks-celebrate" aria-live="polite">🎉 Усі задачі на день виконано!</div>
 
 <section id="shop-modal" class="app-modal" hidden>
   <div class="app-modal-inner">
     <div class="app-modal-header">
-      <button type="button" class="app-modal-back" data-close-modal="shop-modal">← Назад</button>
+      <button type="button" class="app-modal-back" data-close-modal="shop-modal"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Задачі</button>
       <h2 class="app-modal-title">Магазин</h2>
       <button type="button" id="open-archive-btn" class="icon-btn shop-archive-btn" aria-label="Архів покупок" title="Архів покупок">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/></svg>
@@ -220,7 +225,7 @@
 <section id="archive-modal" class="app-modal" hidden>
   <div class="app-modal-inner">
     <div class="app-modal-header">
-      <button type="button" class="app-modal-back" data-close-modal="archive-modal">← Назад</button>
+      <button type="button" class="app-modal-back" data-close-modal="archive-modal"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Магазин</button>
       <h2 class="app-modal-title">Архів покупок</h2>
     </div>
     <p id="archive-summary" class="app-modal-hint"></p>
@@ -230,6 +235,7 @@
 
 <section id="shop-sheet" class="sheet" hidden>
   <div class="sheet-panel" role="dialog" aria-labelledby="shop-sheet-heading">
+    <div class="sheet-handle" aria-hidden="true"></div>
     <div class="sheet-nav">
       <button type="button" id="shop-sheet-cancel" class="sheet-nav-btn">Скасувати</button>
       <h2 id="shop-sheet-heading" class="sheet-nav-title">Новий товар</h2>
@@ -285,6 +291,7 @@
 
 <section id="task-sheet" class="sheet" hidden>
   <div class="sheet-panel" role="dialog" aria-labelledby="task-sheet-heading">
+    <div class="sheet-handle" aria-hidden="true"></div>
     <div class="sheet-nav">
       <button type="button" id="task-sheet-cancel" class="sheet-nav-btn">Скасувати</button>
       <h2 id="task-sheet-heading" class="sheet-nav-title">Нова задача</h2>
@@ -299,9 +306,21 @@
       <button type="button" class="segment" data-type="star" role="radio" aria-checked="false"><span class="segment-star">★</span> Зіркова</button>
     </div>
     <p class="sheet-footnote">Кожні 5 виконаних зіркових задач дають одну зірку</p>
-    <div class="sheet-section-title">Повтор</div>
-    <div class="sheet-group">
-      <div id="task-sheet-repeat"></div>
+    <div class="sheet-group sheet-rows">
+      <label class="sheet-row">
+        <svg class="sheet-row-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+        <span id="task-sheet-date-title" class="sheet-row-title">Дата</span>
+        <span id="task-sheet-date-label" class="sheet-row-value"></span>
+        <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        <input type="date" id="task-sheet-date" aria-label="Дата задачі">
+      </label>
+      <button type="button" id="task-sheet-repeat-row" class="sheet-row" aria-expanded="false">
+        <svg class="sheet-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>
+        <span class="sheet-row-title">Повтор</span>
+        <span id="task-sheet-repeat-label" class="sheet-row-value"></span>
+        <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <div id="task-sheet-repeat" class="repeat-list" hidden></div>
     </div>
     <div id="task-sheet-delete" class="sheet-delete"></div>
   </div>
@@ -310,7 +329,7 @@
 <section id="thoughts-modal" class="app-modal" hidden>
   <div class="app-modal-inner">
     <div class="app-modal-header">
-      <button type="button" class="app-modal-back" data-close-modal="thoughts-modal">← Назад</button>
+      <button type="button" class="app-modal-back" data-close-modal="thoughts-modal"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Сьогодні</button>
       <h2 class="app-modal-title">💭 Думки</h2>
     </div>
     <p id="thoughts-date" class="app-modal-hint"></p>
@@ -325,7 +344,7 @@
 <section id="settings-modal" class="app-modal" hidden>
   <div class="app-modal-inner">
     <div class="app-modal-header">
-      <button type="button" class="app-modal-back" data-close-modal="settings-modal">← Назад</button>
+      <button type="button" class="app-modal-back" data-close-modal="settings-modal"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Назад</button>
       <h2 class="app-modal-title">Налаштування</h2>
     </div>
     <div class="card">
@@ -345,6 +364,7 @@
   </div>
 </section>
 
+<script src="ui.js?v=1.3"></script>
 <script src="circumplex.js?v=1.3"></script>
 <script src="body.js?v=1.3"></script>
 <script src="factors.js?v=1.3"></script>
