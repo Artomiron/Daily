@@ -1256,7 +1256,6 @@ function renderTaskStats(dates) {
   let done = 0;
   let doneMinutes = 0;
   let daysWithTasks = 0;
-  let fullDays = 0;
   let starPointsEarned = 0;
   let penaltiesCount = 0;
   const perTask = new Map();
@@ -1269,7 +1268,6 @@ function renderTaskStats(dates) {
     done += dayDone.length;
     doneMinutes += dayDone.reduce((sum, t) => sum + (t.estimate || 0), 0);
     if (tasks.length) daysWithTasks++;
-    if (tasks.length && dayDone.length === tasks.length) fullDays++;
     starPointsEarned += (taskStore.starDone[date] || []).length;
     penaltiesCount += (taskStore.penalties[date] || []).length;
     perDay.push({ date, planned: tasks.length, done: dayDone.length });
@@ -1285,7 +1283,8 @@ function renderTaskStats(dates) {
   const tiles = [
     { value: rate == null ? '—' : `${rate}%`, label: 'Виконано' },
     { value: `${done}<span class="stat-max">/${planned}</span>`, label: 'Задач виконано' },
-    { value: `${fullDays}<span class="stat-max">/${daysWithTasks}</span>`, label: 'Днів, коли виконано все' },
+    // Середнє — лише за днями, коли були задачі, щоб дні без планів не тягнули його вниз
+    { value: daysWithTasks ? (done / daysWithTasks).toFixed(1).replace('.', ',') : '—', label: 'Виконано за день, у середньому' },
     { value: doneMinutes ? formatEstimate(doneMinutes) : '—', label: 'Час у виконаних задачах' },
     { value: `★ ${starPointsEarned}`, label: 'Зіркових задач виконано' },
     { value: penaltiesCount, label: 'Пріоритетних пропущено' },
