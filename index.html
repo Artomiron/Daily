@@ -112,16 +112,15 @@
     </button>
 
     <div class="tasks-header">
-      <div id="tasks-progress" class="tasks-progress" hidden>
-        <div class="tasks-progress-text"></div>
-        <div class="tasks-progress-bar"><div class="tasks-progress-fill"></div></div>
-      </div>
       <button type="button" id="star-widget" class="star-widget">
         <span class="star-shape day-stars" aria-hidden="true"></span>
-        <span class="star-info" aria-hidden="true">
-          <b id="star-progress-text">0/4</b>
-        </span>
       </button>
+      <div id="tasks-progress" class="tier-progress" hidden>
+        <div class="tier-track">
+          <div class="tier-fill"></div>
+        </div>
+        <div class="tasks-progress-text"></div>
+      </div>
     </div>
 
     <div id="task-list" class="task-list"></div>

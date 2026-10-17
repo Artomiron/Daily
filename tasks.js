@@ -454,12 +454,16 @@ function renderTasks() {
 
   const tasks = tasksForDate(currentDate);
   const doneCount = tasks.filter((t) => isTaskDone(t, currentDate)).length;
+  // Шкала до останнього порогу зірок: видно, за скільки справ дають кожну зірку
   const progress = document.getElementById('tasks-progress');
   progress.hidden = !tasks.length;
+  const next = STAR_TIERS.find((min) => doneCount < min);
+  const goal = STAR_TIERS[STAR_TIERS.length - 1];
   progress.querySelector('.tasks-progress-text').textContent = doneCount === tasks.length && tasks.length
     ? `Усе виконано! ${doneCount} з ${tasks.length} 🎉`
-    : `Виконано ${doneCount} з ${tasks.length}`;
-  progress.querySelector('.tasks-progress-fill').style.width = tasks.length ? `${(doneCount / tasks.length) * 100}%` : '0';
+    : `Виконано ${doneCount} з ${tasks.length}` + (next ? ` · до зірки ще ${next - doneCount}` : '');
+  progress.querySelector('.tier-fill').style.width = `${(Math.min(doneCount, goal) / goal) * 100}%`;
+  renderTierMarks(progress.querySelector('.tier-track'), doneCount);
   progress.classList.toggle('complete', tasks.length > 0 && doneCount === tasks.length);
   if (!starAnimating) renderStarWidget();
 
@@ -810,17 +814,28 @@ let starAnimating = false;
 
 const DAY_STAR_SVG = '<svg class="day-star" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z"/></svg>';
 
-// Три зірочки дня, скільки виконано до наступної зірки і баланс
+// Три зірочки дня по центру
 function renderStarWidget() {
   const count = doneCountOn(currentDate);
   const stars = dayStarsOn(currentDate);
-  const next = STAR_TIERS.find((min) => count < min);
   const shape = starWidget.querySelector('.star-shape');
   if (!shape.children.length) shape.innerHTML = DAY_STAR_SVG.repeat(STAR_TIERS.length);
   [...shape.children].forEach((star, i) => star.classList.toggle('on', i < stars));
   starWidget.classList.toggle('is-full', stars === STAR_TIERS.length);
-  document.getElementById('star-progress-text').textContent = next ? `${count}/${next}` : `${count} ✓`;
   starWidget.setAttribute('aria-label', `Зірок за день: ${stars} з ${STAR_TIERS.length}. Виконано справ: ${count}`);
+}
+
+// Позначки порогів на шкалі: зірочка над рискою і число справ під нею
+function renderTierMarks(track, count) {
+  const goal = STAR_TIERS[STAR_TIERS.length - 1];
+  track.querySelectorAll('.tier-mark').forEach((m) => m.remove());
+  STAR_TIERS.forEach((min, i) => {
+    const mark = document.createElement('span');
+    mark.className = 'tier-mark' + (count >= min ? ' reached' : '') + (i === STAR_TIERS.length - 1 ? ' last' : '');
+    mark.style.left = `${(min / goal) * 100}%`;
+    mark.innerHTML = `<i aria-hidden="true">${'★'.repeat(i + 1)}</i><b>${min}</b>`;
+    track.appendChild(mark);
+  });
 }
 
 function pulse(el, className) {

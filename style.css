@@ -3440,3 +3440,95 @@ main {
 }
 
 #star-popup .star-popup-art { width: 200px; height: 120px; }
+
+/* ---------- Шапка задач: зірки дня по центру і шкала порогів ---------- */
+
+.tasks-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.tasks-header .star-widget {
+  margin: 0 auto;
+  padding: 2px 10px;
+  background: none;
+  border: none;
+  border-radius: 14px;
+}
+
+.tasks-header .star-shape.day-stars {
+  height: 48px;
+  gap: 6px;
+  padding: 0;
+}
+
+.tasks-header .day-star { width: 30px; height: 30px; }
+.tasks-header .day-star:nth-child(2) { width: 38px; height: 38px; margin-top: -10px; }
+
+.tier-progress { padding: 0 12px; }
+.tier-progress[hidden] { display: none; }
+
+.tier-track {
+  position: relative;
+  height: 8px;
+  margin: 20px 0 26px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tier-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #FF9F1C, #FFC233 70%, #FFE58A);
+  box-shadow: 0 0 8px rgba(255, 194, 51, 0.35);
+  transition: width 0.6s cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+
+/* Риска порогу; над нею — скільки зірок він дає, під нею — скільки справ треба */
+.tier-mark {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 14px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.tier-mark i,
+.tier-mark b {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-style: normal;
+  line-height: 1;
+}
+
+.tier-mark i {
+  bottom: 17px;
+  font-size: 0.7rem;
+  letter-spacing: -1px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.tier-mark b {
+  top: 18px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* Остання риска стоїть на самому краї — підписи вирівнюємо по ній праворуч */
+.tier-mark.last { margin-left: -2px; }
+.tier-mark.last i,
+.tier-mark.last b { left: auto; right: -2px; transform: none; }
+
+.tier-mark.reached { background: #FFE58A; }
+.tier-mark.reached i { color: #FFC233; text-shadow: 0 0 6px rgba(255, 194, 51, 0.6); }
+.tier-mark.reached b { color: #FFD54A; }
+
+.tier-progress .tasks-progress-text { text-align: center; }
+.tier-progress.complete .tasks-progress-text { color: var(--accent-green); }
