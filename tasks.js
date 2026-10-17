@@ -26,9 +26,8 @@ const WEEKDAYS = [
 
 // Тривалість (естімейт) задачі в хвилинах — обов'язкова, за замовчуванням 1 година
 const ESTIMATE_DEFAULT = 60;
-const ESTIMATE_STEP = 15;
-const ESTIMATE_MAX = 12 * 60;
-const ESTIMATE_PRESETS = [15, 30, 45, 60, 90, 120, 180, 240];
+const ESTIMATE_STEP = 5;
+const ESTIMATE_MAX_HOURS = 12;
 // Більше цього на день — попереджаємо, що плани занадто амбіційні
 const DAY_PLAN_LIMIT = 8 * 60;
 
@@ -932,42 +931,84 @@ sheetDateInput.addEventListener('click', () => {
 
 function setEstimateOpen(open) {
   sheetEstimatePicker.hidden = !open;
+  // Позицію барабанів можна виставити лише коли вони видимі
+  if (open) scrollWheelsTo(sheetEstimate);
   sheetEstimateRow.classList.toggle('open', open);
   sheetEstimateRow.setAttribute('aria-expanded', open);
 }
 
 sheetEstimateRow.addEventListener('click', () => setEstimateOpen(sheetEstimatePicker.hidden));
 
-function renderSheetEstimate() {
-  document.getElementById('task-sheet-estimate-label').textContent = formatEstimate(sheetEstimate);
-  document.getElementById('estimate-value').textContent = formatEstimate(sheetEstimate);
-  const presets = sheetEstimatePicker.querySelector('.estimate-presets');
-  presets.innerHTML = '';
-  ESTIMATE_PRESETS.forEach((minutes) => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'chip' + (minutes === sheetEstimate ? ' active' : '');
-    chip.textContent = presetLabel(minutes);
-    chip.addEventListener('click', () => {
-      sheetEstimate = minutes;
-      renderSheetEstimate();
-    });
-    presets.appendChild(chip);
+// Класичний вибір часу: барабани «год» і «хв» (крок 5 хв) зі «клацанням» на значеннях
+const WHEEL_ROW = 36;
+const hoursWheel = document.getElementById('estimate-hours');
+const minutesWheel = document.getElementById('estimate-minutes');
+
+function fillWheel(wheel, values) {
+  wheel.innerHTML = '';
+  values.forEach((value) => {
+    const item = document.createElement('div');
+    item.className = 'wheel-item';
+    item.setAttribute('role', 'option');
+    item.textContent = String(value).padStart(2, '0');
+    item.addEventListener('click', () => wheel.scrollTo({ top: values.indexOf(value) * WHEEL_ROW, behavior: 'smooth' }));
+    wheel.appendChild(item);
   });
 }
 
-// Коротші підписи для кнопок швидкого вибору: «1,5 год» замість «1 год 30 хв»
-function presetLabel(minutes) {
-  return minutes > 60 && minutes % 60 === 30 ? `${Math.floor(minutes / 60)},5\u00a0год` : formatEstimate(minutes);
+fillWheel(hoursWheel, Array.from({ length: ESTIMATE_MAX_HOURS + 1 }, (_, i) => i));
+fillWheel(minutesWheel, Array.from({ length: 60 / ESTIMATE_STEP }, (_, i) => i * ESTIMATE_STEP));
+
+function wheelIndex(wheel) {
+  return Math.max(0, Math.min(wheel.children.length - 1, Math.round(wheel.scrollTop / WHEEL_ROW)));
 }
 
-function changeEstimate(delta) {
-  sheetEstimate = Math.min(ESTIMATE_MAX, Math.max(ESTIMATE_STEP, sheetEstimate + delta));
-  renderSheetEstimate();
+function markWheel(wheel) {
+  const index = wheelIndex(wheel);
+  [...wheel.children].forEach((item, i) => {
+    item.classList.toggle('selected', i === index);
+    item.setAttribute('aria-selected', i === index);
+  });
 }
 
-document.getElementById('estimate-minus').addEventListener('click', () => changeEstimate(-ESTIMATE_STEP));
-document.getElementById('estimate-plus').addEventListener('click', () => changeEstimate(ESTIMATE_STEP));
+function scrollWheelsTo(minutes) {
+  hoursWheel.scrollTop = Math.floor(minutes / 60) * WHEEL_ROW;
+  minutesWheel.scrollTop = ((minutes % 60) / ESTIMATE_STEP) * WHEEL_ROW;
+  markWheel(hoursWheel);
+  markWheel(minutesWheel);
+}
+
+function readWheels() {
+  const minutes = wheelIndex(hoursWheel) * 60 + wheelIndex(minutesWheel) * ESTIMATE_STEP;
+  // 0 год 0 хв не буває — мінімум 5 хвилин
+  if (!minutes) {
+    minutesWheel.scrollTo({ top: WHEEL_ROW, behavior: 'smooth' });
+    return ESTIMATE_STEP;
+  }
+  return minutes;
+}
+
+[hoursWheel, minutesWheel].forEach((wheel) => {
+  let settleTimer = null;
+  wheel.addEventListener('scroll', () => {
+    markWheel(wheel);
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      sheetEstimate = readWheels();
+      renderSheetEstimate();
+    }, 120);
+  }, { passive: true });
+  // Клавіатура: стрілки змінюють значення на один крок
+  wheel.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    wheel.scrollBy({ top: e.key === 'ArrowDown' ? WHEEL_ROW : -WHEEL_ROW, behavior: 'smooth' });
+  });
+});
+
+function renderSheetEstimate() {
+  document.getElementById('task-sheet-estimate-label').textContent = formatEstimate(sheetEstimate);
+}
 
 function setRepeatListOpen(open) {
   sheetRepeatList.hidden = !open;

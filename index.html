@@ -28,7 +28,7 @@
 </header>
 
 <main>
-  <section id="tab-today" class="tab-panel active">
+  <section id="tab-today" class="tab-panel">
     <div id="today-week"></div>
     <p id="date-label" class="date-label"></p>
 
@@ -105,7 +105,7 @@
 
   </section>
 
-  <section id="tab-tasks" class="tab-panel">
+  <section id="tab-tasks" class="tab-panel active">
     <div id="tasks-week"></div>
     <button type="button" id="open-shop-btn" class="shop-btn" aria-label="Магазин винагород">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8.5h13l.9 10.6a2 2 0 0 1-2 2.2H6.6a2 2 0 0 1-2-2.2z"/><path d="M8.8 11.5V7a3.2 3.2 0 0 1 6.4 0v4.5"/></svg>
@@ -161,11 +161,11 @@
 </main>
 
 <nav class="bottom-tabs" aria-label="Розділи">
-  <button class="tab-btn active" data-tab="today">
+  <button class="tab-btn" data-tab="today">
     <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>
     <span>Сьогодні</span>
   </button>
-  <button class="tab-btn" data-tab="tasks">
+  <button class="tab-btn active" data-tab="tasks">
     <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5l1.5 1.5L8.5 5M4 12.5l1.5 1.5 3-3M4 18.5l1.5 1.5 3-3M11.5 6.5H20M11.5 12.5H20M11.5 18.5H20"/></svg>
     <span>Задачі</span>
   </button>
@@ -330,11 +330,12 @@
         <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </button>
       <div id="task-sheet-estimate" class="repeat-list estimate-picker" hidden>
-        <div class="estimate-presets"></div>
-        <div class="interval-picker estimate-stepper">
-          <button type="button" class="sleep-btn" id="estimate-minus" aria-label="Менше на 15 хвилин">−</button>
-          <b id="estimate-value" class="estimate-value"></b>
-          <button type="button" class="sleep-btn" id="estimate-plus" aria-label="Більше на 15 хвилин">+</button>
+        <div class="wheel-picker">
+          <div class="wheel-band" aria-hidden="true"></div>
+          <div class="wheel" id="estimate-hours" role="listbox" aria-label="Години" tabindex="0"></div>
+          <span class="wheel-unit">год</span>
+          <div class="wheel" id="estimate-minutes" role="listbox" aria-label="Хвилини" tabindex="0"></div>
+          <span class="wheel-unit">хв</span>
         </div>
       </div>
       <label class="sheet-row">

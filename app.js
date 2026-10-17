@@ -750,6 +750,11 @@ function mergeEntries(existing, incoming) {
 renderToday();
 announcePenalties(settlePenalties());
 renderTasks();
+// За замовчуванням відкриваються «Задачі»; з нагадування про оцінку дня — «Сьогодні»
+if (location.hash === '#today') {
+  switchTab('today');
+  history.replaceState(null, '', location.pathname + location.search);
+}
 
 // Якщо застосунок лишався відкритим через північ — повертаємось на новий день
 document.addEventListener('visibilitychange', () => {

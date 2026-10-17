@@ -3017,23 +3017,74 @@ main {
   gap: 4px;
 }
 
-.estimate-picker { padding: 10px 14px 12px 44px; }
+.estimate-picker { padding: 6px 14px 10px; }
 
-.estimate-presets {
+/* ---------- Барабани вибору часу, як в iOS ---------- */
+
+.wheel-picker {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
+  height: 180px;
+  /* Краї барабанів плавно зникають */
+  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
 }
 
-.estimate-stepper {
-  justify-content: flex-start;
-  margin-top: 12px;
+.wheel-band {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 36px;
+  transform: translateY(-50%);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
 }
 
-.estimate-value {
-  min-width: 96px;
-  text-align: center;
+.wheel {
+  position: relative;
+  width: 64px;
+  height: 180px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  /* Перший і останній пункти теж можуть стати в центр */
+  padding: 72px 0;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.wheel::-webkit-scrollbar { display: none; }
+
+.wheel-item {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.wheel-item.selected {
+  color: var(--text);
+  font-weight: 600;
+  transform: scale(1.08);
+}
+
+.wheel-unit {
+  width: 34px;
   font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
 }
 
 /* ---------- Попап «плани занадто амбіційні» ---------- */

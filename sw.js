@@ -64,7 +64,8 @@ self.addEventListener('push', (event) => {
     icon: './icons/icon-192.png',
     badge: './icons/favicon-32.png',
     tag: 'daily-reminder',
-    data: { url: './' },
+    // Нагадування про оцінку дня відкриває одразу «Сьогодні»
+    data: { url: './#today' },
   }));
 });
 
@@ -73,8 +74,13 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const url = new URL(event.notification.data?.url || './', self.registration.scope).href;
     const existing = windows.find((w) => w.url.startsWith(self.registration.scope));
-    if (existing) return existing.focus();
-    return self.clients.openWindow(event.notification.data?.url || './');
+    if (existing) {
+      // Застосунок уже відкритий — переводимо його на потрібну вкладку
+      const client = await existing.navigate(url).catch(() => existing);
+      return (client || existing).focus();
+    }
+    return self.clients.openWindow(url);
   })());
 });
