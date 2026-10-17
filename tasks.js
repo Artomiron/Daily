@@ -48,11 +48,33 @@ const STAR_TIERS = [4, 9, 15];
 const STAR_RULES_SINCE = '2026-10-18';
 const LEGACY_STAR_GOAL = 5;
 
+// Похвала за результат і заклик рухатись далі — кілька варіантів на кожну зірку, щоб не набридало
 const STAR_TIER_COPY = [
   null,
-  { title: 'Перша зірка дня! ⭐', text: (n) => `${n} ${pluralTasks(n)} позаду — чудовий початок! Друга зірка — на ${STAR_TIERS[1]} справах.` },
-  { title: 'Дві зірки! 🌟', text: (n) => `${n} ${pluralTasks(n)} — ви в ударі! Третя зірка чекає на ${STAR_TIERS[2]} справах.` },
-  { title: 'Максимум зірок! 💫', text: (n) => `${n} ${pluralTasks(n)} за день — неймовірний результат! Усі три зірки ваші.` },
+  {
+    title: 'Перша зірка дня! ⭐',
+    texts: [
+      'Чудовий старт! День уже працює на вас — тримайте цей темп.',
+      'Ви взяли розгін! Кожна наступна справа наближає другу зірку.',
+      'Так тримати! Перший крок зроблено, далі — тільки цікавіше.',
+    ],
+  },
+  {
+    title: 'Дві зірки! 🌟',
+    texts: [
+      'Ви в ударі! Такий день хочеться запам\'ятати — третя зірка вже близько.',
+      'Неймовірна продуктивність! Ще трохи — і день стане ідеальним.',
+      'Ви сяєте! Енергії вистачить і на третю зірку.',
+    ],
+  },
+  {
+    title: 'Максимум зірок! 💫',
+    texts: [
+      'Ідеальний день! Ви зробили неймовірне — пишайтеся собою.',
+      'Легендарний результат! Саме з таких днів складаються великі звершення.',
+      'Ви підкорили цей день! Тепер заслужений відпочинок — ви на це заробили.',
+    ],
+  },
 ];
 
 function loadTasks() {
@@ -687,7 +709,7 @@ function toggleTask(task, row, checkEl) {
   timeDialogPending = true;
   burstFrom(checkEl, starsAfter > starsBefore ? STAR_COLORS : FX_COLORS);
   if (navigator.vibrate) navigator.vibrate(12);
-  if (starsAfter > starsBefore) animateStarGain(checkEl, date, starsAfter);
+  if (starsAfter > starsBefore) animateStarGain(checkEl, starsAfter);
 
   const all = tasksForDate(date);
   const allDone = all.length && all.every((t) => isTaskDone(t, date));
@@ -808,14 +830,13 @@ function pulse(el, className) {
 }
 
 // Золота зірочка летить з чекбокса до зірочок дня, потім — попап з новою кількістю зірок
-function animateStarGain(fromEl, date, stars) {
+function animateStarGain(fromEl, stars) {
   starAnimating = true;
-  const count = doneCountOn(date);
   const arrive = () => {
     renderStarWidget();
     pulse(starWidget, 'star-gain');
     floatPlusOne();
-    setTimeout(() => afterTimeDialog(() => celebrateStar(stars, count)), 850);
+    setTimeout(() => afterTimeDialog(() => celebrateStar(stars)), 850);
   };
 
   if (prefersReducedMotion()) {
@@ -860,7 +881,7 @@ function floatPlusOne() {
 }
 
 // Нова зірка дня: спалах, золоті промені й конфеті, попап з бадьорим текстом
-function celebrateStar(stars, count) {
+function celebrateStar(stars) {
   pulse(starWidget, 'star-complete');
   if (navigator.vibrate) navigator.vibrate([30, 50, 30, 50, 60]);
 
@@ -886,7 +907,7 @@ function celebrateStar(stars, count) {
     goldenRain();
   }
 
-  setTimeout(() => showStarPopup(stars, count), prefersReducedMotion() ? 0 : 450);
+  setTimeout(() => showStarPopup(stars), prefersReducedMotion() ? 0 : 450);
 }
 
 function goldenRain() {
@@ -926,10 +947,10 @@ function pluralStars(n) {
 
 const starPopup = document.getElementById('star-popup');
 
-function showStarPopup(stars, count) {
+function showStarPopup(stars) {
   const copy = STAR_TIER_COPY[stars];
   document.getElementById('star-popup-title').textContent = copy.title;
-  document.getElementById('star-popup-text').textContent = copy.text(count);
+  document.getElementById('star-popup-text').textContent = copy.texts[Math.floor(Math.random() * copy.texts.length)];
   const art = document.getElementById('star-popup-stars');
   art.innerHTML = STAR_TIERS.map((_, i) => `
     <svg class="popup-day-star${i < stars ? ' on' : ''}${i === stars - 1 ? ' new' : ''}" viewBox="0 0 24 24" style="--i:${i}">
