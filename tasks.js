@@ -375,6 +375,14 @@ function renderTaskRow(task) {
     part.append(meta);
     metaEl.appendChild(part);
   }
+  // Перенесена задача: показуємо, звідки, щоб не плутати з повторюваною того ж дня
+  if (task.movedFrom && task.start === currentDate) {
+    const part = document.createElement('span');
+    part.className = 'meta-part';
+    part.innerHTML = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6v5a4 4 0 0 0 4 4h11M15 11l4 4-4 4"/></svg>';
+    part.append(`з ${formatDayMonth(task.movedFrom)}`);
+    metaEl.appendChild(part);
+  }
   if (isPenalized(task, currentDate)) {
     row.classList.add('penalized');
     const badge = document.createElement('span');
@@ -387,6 +395,7 @@ function renderTaskRow(task) {
     : missed ? `«${task.title}» не виконано. Позначити виконаною` : `Позначити «${task.title}» виконаною`);
   row.querySelector('.task-check').addEventListener('click', (e) => toggleTask(task, row, e.currentTarget));
   row.querySelector('.task-body').addEventListener('click', () => openTaskSheet(task));
+  if (missed) row.appendChild(renderMoveButton(task));
   return attachTaskSwipe(row, task, done);
 }
 
@@ -1013,6 +1022,53 @@ function withTaskUndo(text, change) {
     saveTasks();
     renderTasks();
   });
+}
+
+// ---------- Перенесення пропущеної задачі на наступний день ----------
+
+function moveTargetLabel(date) {
+  return date === todayISO() ? 'на сьогодні' : `на ${formatDayMonth(date)}`;
+}
+
+function renderMoveButton(task) {
+  const target = shiftDate(currentDate, 1);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'task-move';
+  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg><span></span>';
+  btn.querySelector('span').textContent = moveTargetLabel(target);
+  btn.setAttribute('aria-label', `Перенести «${task.title}» ${moveTargetLabel(target)}`);
+  btn.addEventListener('click', () => moveTaskToNextDay(task, currentDate));
+  return btn;
+}
+
+// Разова задача просто переїжджає; у повторюваної пропускаємо цей день
+// і створюємо разову копію на наступний, щоб не ламати сам повтор
+function moveTaskToNextDay(task, date) {
+  const target = shiftDate(date, 1);
+  let moved = task;
+  withTaskUndo(`Перенесено ${moveTargetLabel(target)}`, () => {
+    if (task.repeat.type === 'none') {
+      task.start = target;
+      task.movedFrom = date;
+    } else {
+      deleteTaskOccurrence(task, date);
+      moved = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        title: task.title,
+        star: task.star,
+        flag: task.flag,
+        estimate: task.estimate,
+        start: target,
+        repeat: { type: 'none' },
+        until: null,
+        movedFrom: date,
+        createdAt: new Date().toISOString(),
+      };
+      taskStore.tasks.push(moved);
+    }
+  });
+  if (plannedMinutes(target) > DAY_PLAN_LIMIT) showOverloadPopup(moved);
 }
 
 function deleteTaskOccurrence(task, date) {

@@ -3094,3 +3094,35 @@ main {
 @media (prefers-reduced-motion: reduce) {
   .overload-icon { animation: none; }
 }
+
+/* ---------- Перенесення пропущеної задачі ---------- */
+
+.task-move {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  margin: -4px -2px -4px 0;
+  padding: 0 10px;
+  border: 1px solid rgba(155, 125, 255, 0.4);
+  border-radius: 18px;
+  background: rgba(155, 125, 255, 0.12);
+  color: #c4b2ff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.task-move svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.task-move:active { transform: scale(0.95); }
