@@ -3532,3 +3532,5 @@ main {
 
 .tier-progress .tasks-progress-text { text-align: center; }
 .tier-progress.complete .tasks-progress-text { color: var(--accent-green); }
+
+.star-widget[hidden] { display: none; }
