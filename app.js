@@ -556,7 +556,38 @@ function renderStats() {
 
   drawChart(dates);
   renderFactorStats(periodEntries);
+  renderTaskStats(dates);
 }
+
+// Перемикач «Щоденник | Задачі» на вкладці статистики; вибір запам'ятовуємо
+const STORAGE_STATS_VIEW = 'daily-stats-view';
+
+function setStatsView(view) {
+  document.querySelectorAll('#stats-switch .segment').forEach((btn) => {
+    const active = btn.dataset.stats === view;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', active);
+  });
+  document.getElementById('stats-diary').hidden = view !== 'diary';
+  document.getElementById('stats-tasks').hidden = view !== 'tasks';
+  try {
+    localStorage.setItem(STORAGE_STATS_VIEW, view);
+  } catch {}
+  // Полотно графіка щоденника малюється за розміром, тож перемальовуємо, коли воно знову видиме
+  if (view === 'diary') drawChart(periodDates(statsDays));
+}
+
+document.querySelectorAll('#stats-switch .segment').forEach((btn) => {
+  btn.addEventListener('click', () => setStatsView(btn.dataset.stats));
+});
+
+(() => {
+  let view = 'diary';
+  try {
+    view = localStorage.getItem(STORAGE_STATS_VIEW) || 'diary';
+  } catch {}
+  setStatsView(view);
+})();
 
 function renderFactorStats(periodEntries) {
   const container = document.getElementById('stats-factors');

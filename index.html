@@ -138,11 +138,16 @@
   </section>
 
   <section id="tab-stats" class="tab-panel">
+    <div id="stats-switch" class="segmented stats-switch" role="tablist" aria-label="Розділ статистики">
+      <button type="button" class="segment active" data-stats="diary" role="tab" aria-selected="true">Щоденник</button>
+      <button type="button" class="segment" data-stats="tasks" role="tab" aria-selected="false">Задачі</button>
+    </div>
     <div class="period-row">
       <button class="period-btn active" data-days="7">7 днів</button>
       <button class="period-btn" data-days="30">30 днів</button>
       <button class="period-btn" data-days="90">90 днів</button>
     </div>
+    <div id="stats-diary">
     <div id="stats-summary" class="stats-summary"></div>
     <div class="card">
       <h2 class="card-title">Стан по днях</h2>
@@ -157,13 +162,30 @@
       <h2 class="card-title">Що впливає на мої дні</h2>
       <div id="stats-factors" class="stats-factors"></div>
     </div>
+    </div>
+
+    <div id="stats-tasks" hidden>
+      <div id="task-stats-summary" class="stats-summary"></div>
+      <div class="card">
+        <h2 class="card-title">Виконання по днях</h2>
+        <div class="chart-legend">
+          <span><i class="dot dot-physical"></i>Усе виконано</span>
+          <span><i class="dot dot-mental"></i>Частково</span>
+        </div>
+        <div id="task-stats-chart" class="completion-chart"></div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">Як виконуються задачі</h2>
+        <div id="task-stats-list" class="task-stats-list"></div>
+      </div>
+    </div>
   </section>
 </main>
 
 <nav class="bottom-tabs" aria-label="Розділи">
   <button class="tab-btn" data-tab="today">
     <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>
-    <span>Сьогодні</span>
+    <span>Щоденник</span>
   </button>
   <button class="tab-btn active" data-tab="tasks">
     <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5l1.5 1.5L8.5 5M4 12.5l1.5 1.5 3-3M4 18.5l1.5 1.5 3-3M11.5 6.5H20M11.5 12.5H20M11.5 18.5H20"/></svg>
@@ -352,7 +374,7 @@
 <section id="thoughts-modal" class="app-modal" hidden>
   <div class="app-modal-inner">
     <div class="app-modal-header">
-      <button type="button" class="app-modal-back" data-close-modal="thoughts-modal"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Сьогодні</button>
+      <button type="button" class="app-modal-back" data-close-modal="thoughts-modal"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Щоденник</button>
       <h2 class="app-modal-title">💭 Думки</h2>
     </div>
     <p id="thoughts-date" class="app-modal-hint"></p>
