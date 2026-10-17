@@ -1410,13 +1410,7 @@ main {
   cursor: pointer;
 }
 
-.task-title span {
-  transition: color 0.35s;
-  word-break: break-word;
-}
-
-/* Виконане — без перекреслення, лише приглушена назва */
-.task.done .task-title span { color: var(--text-dim); }
+.task-title span { word-break: break-word; }
 
 /* Минулий день, задачу не виконано — червоний кружечок із хрестиком */
 .task.missed .check-circle {
@@ -2979,8 +2973,6 @@ main {
   /* Червоний, щоб не плутати з золотими зірками */
   fill: #e5484d;
 }
-
-.task.done .task-flag { opacity: 0.45; }
 
 .flag-icon {
   fill: #e5484d;
