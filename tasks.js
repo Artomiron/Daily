@@ -395,7 +395,7 @@ function renderTaskRow(task) {
     : missed ? `«${task.title}» не виконано. Позначити виконаною` : `Позначити «${task.title}» виконаною`);
   row.querySelector('.task-check').addEventListener('click', (e) => toggleTask(task, row, e.currentTarget));
   row.querySelector('.task-body').addEventListener('click', () => openTaskSheet(task));
-  if (missed) row.appendChild(renderMoveButton(task));
+  if (missed && canMoveToNextDay(task, currentDate)) row.appendChild(renderMoveButton(task));
   return attachTaskSwipe(row, task, done);
 }
 
@@ -1028,6 +1028,16 @@ function withTaskUndo(text, change) {
 
 function moveTargetLabel(date) {
   return date === todayISO() ? 'на сьогодні' : `на ${formatDayMonth(date)}`;
+}
+
+// Не переносимо щоденні задачі (вони й так будуть завтра) і не створюємо дублікатів:
+// якщо в наступному дні вже є ця ж повторювана задача або задача з такою самою назвою
+function canMoveToNextDay(task, date) {
+  if (task.repeat.type === 'daily') return false;
+  const target = shiftDate(date, 1);
+  if (taskOccursOn(task, target)) return false;
+  const sameTitle = (t) => t.title.trim().toLowerCase() === task.title.trim().toLowerCase();
+  return !tasksForDate(target).some((t) => t.id !== task.id && sameTitle(t));
 }
 
 function renderMoveButton(task) {
