@@ -284,20 +284,46 @@ const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l
 const CROSS_SVG = '<svg class="cross" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
 const CLOCK_SVG = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 const REPEAT_SVG = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>';
-const STORAGE_DONE_COLLAPSED = 'daily-tasks-done-collapsed';
+// Згорнутість розділів списку: «Виконано» за замовчуванням згорнутий, «Не виконано» — розгорнутий
+const TASK_SECTIONS = {
+  done: { key: 'daily-tasks-done-collapsed', label: 'Виконано', collapsedByDefault: true },
+  missed: { key: 'daily-tasks-missed-collapsed', label: 'Не виконано', collapsedByDefault: false },
+};
 
-function isDoneCollapsed() {
+function isSectionCollapsed(section) {
   try {
-    return localStorage.getItem(STORAGE_DONE_COLLAPSED) !== 'false';
+    const value = localStorage.getItem(TASK_SECTIONS[section].key);
+    return value == null ? TASK_SECTIONS[section].collapsedByDefault : value === 'true';
   } catch {
-    return true;
+    return TASK_SECTIONS[section].collapsedByDefault;
   }
 }
 
-function setDoneCollapsed(value) {
+function setSectionCollapsed(section, value) {
   try {
-    localStorage.setItem(STORAGE_DONE_COLLAPSED, String(value));
+    localStorage.setItem(TASK_SECTIONS[section].key, String(value));
   } catch {}
+}
+
+// Заголовок розділу з лічильником; задачі розділу додаються, лише якщо він розгорнутий
+function renderTaskSection(list, section, tasks) {
+  if (!tasks.length) return;
+  const collapsed = isSectionCollapsed(section);
+  const header = document.createElement('button');
+  header.type = 'button';
+  header.id = `${section}-header`;
+  header.className = `done-header section-${section}` + (collapsed ? ' collapsed' : '');
+  header.setAttribute('aria-expanded', !collapsed);
+  header.innerHTML = `
+    <span>${TASK_SECTIONS[section].label}</span>
+    <span class="done-count">${tasks.length}</span>
+    <svg class="done-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>`;
+  header.addEventListener('click', () => {
+    setSectionCollapsed(section, !collapsed);
+    renderTasks();
+  });
+  list.appendChild(header);
+  if (!collapsed) tasks.forEach((task) => list.appendChild(renderTaskRow(task)));
 }
 
 function renderTasks() {
@@ -321,28 +347,13 @@ function renderTasks() {
     return;
   }
 
-  // Виконані — в окремому розділі, який можна згорнути, як у «Нагадуваннях»
+  // Виконані — в окремому розділі, який можна згорнути, як у «Нагадуваннях».
+  // У минулому дні невиконані теж збираються в свій розділ «Не виконано»
   const openTasks = tasks.filter((t) => !isTaskDone(t, currentDate));
   const doneTasks = tasks.filter((t) => isTaskDone(t, currentDate));
-  openTasks.forEach((task) => list.appendChild(renderTaskRow(task)));
-  if (doneTasks.length) {
-    const collapsed = isDoneCollapsed();
-    const header = document.createElement('button');
-    header.type = 'button';
-    header.id = 'done-header';
-    header.className = 'done-header' + (collapsed ? ' collapsed' : '');
-    header.setAttribute('aria-expanded', !collapsed);
-    header.innerHTML = `
-      <span>Виконано</span>
-      <span class="done-count">${doneTasks.length}</span>
-      <svg class="done-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>`;
-    header.addEventListener('click', () => {
-      setDoneCollapsed(!collapsed);
-      renderTasks();
-    });
-    list.appendChild(header);
-    if (!collapsed) doneTasks.forEach((task) => list.appendChild(renderTaskRow(task)));
-  }
+  if (currentDate < todayISO()) renderTaskSection(list, 'missed', openTasks);
+  else openTasks.forEach((task) => list.appendChild(renderTaskRow(task)));
+  renderTaskSection(list, 'done', doneTasks);
 }
 
 function renderTaskRow(task) {

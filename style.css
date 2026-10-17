@@ -3281,3 +3281,14 @@ main {
 
 .task-stat-fill.full { background: var(--accent-green); }
 .task-stat-fill.low { background: var(--danger); }
+
+/* «Не виконано» в минулих днях — заголовок і лічильник у червоних тонах */
+.section-missed { color: #f08a8a; }
+
+.section-missed .done-count {
+  background: rgba(224, 86, 86, 0.15);
+  border-color: rgba(224, 86, 86, 0.4);
+  color: #f08a8a;
+}
+
+.done-header.section-missed:first-child { margin-top: 0; }
