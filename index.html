@@ -117,12 +117,9 @@
         <div class="tasks-progress-bar"><div class="tasks-progress-fill"></div></div>
       </div>
       <button type="button" id="star-widget" class="star-widget">
-        <span class="star-shape" aria-hidden="true">
-          <span class="star-meter"><span class="star-fill"></span></span>
-          <svg class="star-outline" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z"/></svg>
-        </span>
+        <span class="star-shape day-stars" aria-hidden="true"></span>
         <span class="star-info" aria-hidden="true">
-          <b id="star-progress-text">0/5</b>
+          <b id="star-progress-text">0/4</b>
           <span id="star-total-wrap" class="star-total">★ <span id="star-total">0</span></span>
         </span>
       </button>
@@ -300,21 +297,21 @@
   </div>
 </div>
 
+<svg class="svg-defs" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="star-gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE58A"/>
+      <stop offset="0.55" stop-color="#FFC233"/>
+      <stop offset="1" stop-color="#FF9F1C"/>
+    </linearGradient>
+  </defs>
+</svg>
+
 <div id="star-popup" class="star-popup" hidden>
   <div class="star-popup-card" role="dialog" aria-labelledby="star-popup-title" aria-describedby="star-popup-text">
     <div class="star-popup-art" aria-hidden="true">
       <div class="star-popup-rays"></div>
-      <svg class="star-popup-star" viewBox="0 0 24 24">
-        <defs>
-          <linearGradient id="star-gold" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#FFE58A"/>
-            <stop offset="0.55" stop-color="#FFC233"/>
-            <stop offset="1" stop-color="#FF9F1C"/>
-          </linearGradient>
-        </defs>
-        <path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z" fill="url(#star-gold)"/>
-      </svg>
-      <span id="star-popup-count" class="star-popup-count"></span>
+      <div id="star-popup-stars" class="popup-day-stars"></div>
     </div>
     <h2 id="star-popup-title" class="star-popup-title"></h2>
     <p id="star-popup-text" class="star-popup-text"></p>
@@ -348,12 +345,6 @@
     <div class="sheet-group">
       <input type="text" id="task-sheet-title" class="sheet-input" placeholder="Що потрібно зробити?" enterkeyhint="done" autocomplete="off" aria-label="Назва задачі">
     </div>
-    <div class="sheet-section-title">Тип</div>
-    <div id="task-sheet-type" class="segmented" role="radiogroup" aria-label="Тип задачі">
-      <button type="button" class="segment active" data-type="normal" role="radio" aria-checked="true">Звичайна</button>
-      <button type="button" class="segment" data-type="star" role="radio" aria-checked="false"><span class="segment-star">★</span> Зіркова</button>
-    </div>
-    <p class="sheet-footnote">Кожні 5 виконаних зіркових задач дають одну зірку</p>
     <div class="sheet-group sheet-rows">
       <label class="sheet-row">
         <svg class="sheet-row-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
@@ -382,7 +373,7 @@
         <input type="checkbox" id="task-sheet-flag" class="switch" role="switch">
       </label>
     </div>
-    <p class="sheet-footnote">Якщо задачу з прапорцем не виконати до кінця дня, з балансу зніметься 1/5 ★</p>
+    <p class="sheet-footnote">Якщо задачу з прапорцем не виконати до кінця дня, з балансу зніметься 1 ★</p>
     <div id="task-sheet-delete" class="sheet-delete"></div>
   </div>
 </section>

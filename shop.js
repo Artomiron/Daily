@@ -1,5 +1,5 @@
 // Магазин винагород: товари з ціною в зірках, купівля за зароблені зірки, архів покупок.
-// Баланс = зароблені зірки (кожні STAR_GOAL зіркових задач) − витрачені на покупки.
+// Баланс = зароблені зірки (starsEarned у tasks.js: зірки днів мінус штрафи) − витрачені на покупки.
 // Сховище: { items: [{ id, title, emoji, cost, createdAt }],
 //            purchases: [{ id, itemId, title, emoji, cost, at }] }
 // У покупці зберігаємо знімок назви, емодзі й ціни — товар потім можуть змінити чи видалити.
@@ -32,10 +32,6 @@ let shopStore = loadShop();
 
 function saveShop() {
   localStorage.setItem(STORAGE_SHOP, JSON.stringify(shopStore));
-}
-
-function starsEarned() {
-  return Math.floor(starPoints() / STAR_GOAL);
 }
 
 function starsSpent() {
@@ -85,9 +81,7 @@ function renderShop() {
 
 function renderShopItem(item, balance) {
   const affordable = balance >= item.cost;
-  // Прогрес до товару враховує й частково заповнену зірку — смужка рухається з кожною зірковою задачею
-  const saved = balancePoints() / STAR_GOAL;
-  const share = Math.min(1, Math.max(0, saved / item.cost));
+  const share = Math.min(1, Math.max(0, balance / item.cost));
   const missing = item.cost - balance;
   const card = document.createElement('div');
   card.className = 'shop-item' + (affordable ? ' affordable' : '');
@@ -185,7 +179,7 @@ function showShopSad(item) {
     <span class="sad-tear" aria-hidden="true"></span>`;
   document.getElementById('shop-popup-title').textContent = 'Поки не вистачає зірок 😔';
   document.getElementById('shop-popup-text').textContent =
-    `Для «${item.title}» потрібно ще ${missing} ★. Виконуйте зіркові задачі — і ця винагорода стане вашою!`;
+    `Для «${item.title}» потрібно ще ${missing} ★. Виконуйте справи — і ця винагорода стане вашою!`;
   document.getElementById('shop-popup-btn').textContent = 'Зрозуміло';
   shopPopup.hidden = false;
   if (navigator.vibrate) navigator.vibrate(60);
