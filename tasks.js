@@ -797,11 +797,8 @@ function renderStarWidget() {
   if (!shape.children.length) shape.innerHTML = DAY_STAR_SVG.repeat(STAR_TIERS.length);
   [...shape.children].forEach((star, i) => star.classList.toggle('on', i < stars));
   starWidget.classList.toggle('is-full', stars === STAR_TIERS.length);
-  const balance = starBalance();
-  starWidget.classList.toggle('in-debt', balance < 0);
   document.getElementById('star-progress-text').textContent = next ? `${count}/${next}` : `${count} ✓`;
-  document.getElementById('star-total').textContent = balance;
-  starWidget.setAttribute('aria-label', `Зірок за день: ${stars} з ${STAR_TIERS.length}. Виконано справ: ${count}. Зірок на балансі: ${balance}`);
+  starWidget.setAttribute('aria-label', `Зірок за день: ${stars} з ${STAR_TIERS.length}. Виконано справ: ${count}`);
 }
 
 function pulse(el, className) {
@@ -932,7 +929,7 @@ const starPopup = document.getElementById('star-popup');
 function showStarPopup(stars, count) {
   const copy = STAR_TIER_COPY[stars];
   document.getElementById('star-popup-title').textContent = copy.title;
-  document.getElementById('star-popup-text').textContent = `${copy.text(count)} На балансі ★ ${starBalance()}.`;
+  document.getElementById('star-popup-text').textContent = copy.text(count);
   const art = document.getElementById('star-popup-stars');
   art.innerHTML = STAR_TIERS.map((_, i) => `
     <svg class="popup-day-star${i < stars ? ' on' : ''}${i === stars - 1 ? ' new' : ''}" viewBox="0 0 24 24" style="--i:${i}">
@@ -945,9 +942,7 @@ function showStarPopup(stars, count) {
 function closeStarPopup() {
   starPopup.hidden = true;
   starAnimating = false;
-  // Зірка порожніє для наступного кола, лічильник зростає
   renderStarWidget();
-  pulse(document.getElementById('star-total-wrap'), 'star-total-bump');
   if (!document.getElementById('shop-modal').hidden) renderShop();
 }
 
