@@ -454,17 +454,12 @@ function renderTasks() {
 
   const tasks = tasksForDate(currentDate);
   const doneCount = tasks.filter((t) => isTaskDone(t, currentDate)).length;
-  // Шкала до останнього порогу зірок: видно, за скільки справ дають кожну зірку
+  // Шкала до останнього порогу зірок з'являється, щойно зароблено першу зірку дня
   const progress = document.getElementById('tasks-progress');
-  progress.hidden = !tasks.length;
-  const next = STAR_TIERS.find((min) => doneCount < min);
   const goal = STAR_TIERS[STAR_TIERS.length - 1];
-  progress.querySelector('.tasks-progress-text').textContent = doneCount === tasks.length && tasks.length
-    ? `Усе виконано! ${doneCount} з ${tasks.length} 🎉`
-    : `Виконано ${doneCount} з ${tasks.length}` + (next ? ` · до зірки ще ${next - doneCount}` : '');
+  progress.hidden = dayStarsOn(currentDate) < 1;
   progress.querySelector('.tier-fill').style.width = `${(Math.min(doneCount, goal) / goal) * 100}%`;
   renderTierMarks(progress.querySelector('.tier-track'), doneCount);
-  progress.classList.toggle('complete', tasks.length > 0 && doneCount === tasks.length);
   if (!starAnimating) renderStarWidget();
 
   const list = document.getElementById('task-list');
