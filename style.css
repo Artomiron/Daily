@@ -1410,16 +1410,24 @@ main {
   cursor: pointer;
 }
 
-/* Перекреслення «малюється» зліва направо */
 .task-title span {
-  background: linear-gradient(currentColor, currentColor) no-repeat 0 55% / 0 2px;
-  transition: background-size 0.35s ease-out, color 0.35s;
+  transition: color 0.35s;
   word-break: break-word;
 }
 
-.task.done .task-title span {
-  background-size: 100% 2px;
-  color: var(--text-dim);
+/* Виконане — без перекреслення, лише приглушена назва */
+.task.done .task-title span { color: var(--text-dim); }
+
+/* Минулий день, задачу не виконано — червоний кружечок із хрестиком */
+.task.missed .check-circle {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.check-circle .cross {
+  stroke: #fff;
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
 }
 
 .task-meta {

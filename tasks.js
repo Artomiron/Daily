@@ -266,6 +266,7 @@ const tasksWeek = createWeekPicker(document.getElementById('tasks-week'), {
 
 const FLAG_SVG = '<svg class="task-flag" viewBox="0 0 24 24" role="img" aria-label="Високий пріоритет"><rect x="4" y="2.5" width="2.2" height="19" rx="1.1"/><path d="M6.2 3.5h12.3c.5 0 .8.6.5 1l-2.6 3.8 2.6 3.8c.3.4 0 1-.5 1H6.2z"/></svg>';
 const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const CROSS_SVG = '<svg class="cross" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
 const REPEAT_SVG = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>';
 const STORAGE_DONE_COLLAPSED = 'daily-tasks-done-collapsed';
 
@@ -331,9 +332,11 @@ function renderTasks() {
 function renderTaskRow(task) {
   const done = isTaskDone(task, currentDate);
   const row = document.createElement('div');
-  row.className = 'task' + (done ? ' done' : '') + (task.star ? ' star' : '');
+  // День минув, а задачу не виконано — червоний хрестик замість порожнього кружечка
+  const missed = !done && currentDate < todayISO();
+  row.className = 'task' + (done ? ' done' : '') + (missed ? ' missed' : '') + (task.star ? ' star' : '');
   row.innerHTML = `
-    <button type="button" class="task-check" role="checkbox" aria-checked="${done}"><span class="check-circle">${CHECK_SVG}</span></button>
+    <button type="button" class="task-check" role="checkbox" aria-checked="${done}"><span class="check-circle">${missed ? CROSS_SVG : CHECK_SVG}</span></button>
     <button type="button" class="task-body">
       <span class="task-title">${task.flag ? FLAG_SVG : ''}${task.star ? '<i class="task-star" aria-label="Зіркова задача">★</i>' : ''}<span></span></span>
       <span class="task-meta"></span>
@@ -351,7 +354,9 @@ function renderTaskRow(task) {
     badge.textContent = `Не виконано · −1/${STAR_GOAL} ★`;
     row.querySelector('.task-meta').appendChild(badge);
   }
-  row.querySelector('.task-check').setAttribute('aria-label', done ? `Позначити «${task.title}» невиконаною` : `Позначити «${task.title}» виконаною`);
+  row.querySelector('.task-check').setAttribute('aria-label', done
+    ? `Позначити «${task.title}» невиконаною`
+    : missed ? `«${task.title}» не виконано. Позначити виконаною` : `Позначити «${task.title}» виконаною`);
   row.querySelector('.task-check').addEventListener('click', (e) => toggleTask(task, row, e.currentTarget));
   row.querySelector('.task-body').addEventListener('click', () => openTaskSheet(task));
   return attachTaskSwipe(row, task, done);
@@ -503,6 +508,11 @@ function toggleTask(task, row, checkEl) {
 
   row.classList.toggle('done', nowDone);
   checkEl.setAttribute('aria-checked', nowDone);
+  // Пропущену задачу відмітили заднім числом — хрестик одразу стає галочкою
+  if (nowDone && row.classList.contains('missed')) {
+    row.classList.remove('missed');
+    checkEl.querySelector('.check-circle').innerHTML = CHECK_SVG;
+  }
 
   if (!nowDone) {
     renderTasks();
