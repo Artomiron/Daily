@@ -311,6 +311,20 @@
         <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </button>
       <div id="task-sheet-repeat" class="repeat-list" hidden></div>
+      <button type="button" id="task-sheet-estimate-row" class="sheet-row" aria-expanded="false">
+        <svg class="sheet-row-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+        <span class="sheet-row-title">Тривалість</span>
+        <span id="task-sheet-estimate-label" class="sheet-row-value"></span>
+        <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <div id="task-sheet-estimate" class="repeat-list estimate-picker" hidden>
+        <div class="estimate-presets"></div>
+        <div class="interval-picker estimate-stepper">
+          <button type="button" class="sleep-btn" id="estimate-minus" aria-label="Менше на 15 хвилин">−</button>
+          <b id="estimate-value" class="estimate-value"></b>
+          <button type="button" class="sleep-btn" id="estimate-plus" aria-label="Більше на 15 хвилин">+</button>
+        </div>
+      </div>
       <label class="sheet-row">
         <svg class="sheet-row-icon flag-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2.5" width="2.2" height="19" rx="1.1"/><path d="M6.2 3.5h12.3c.5 0 .8.6.5 1l-2.6 3.8 2.6 3.8c.3.4 0 1-.5 1H6.2z"/></svg>
         <span class="sheet-row-title">Високий пріоритет</span>

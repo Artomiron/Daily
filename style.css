@@ -1426,8 +1426,9 @@ main {
 
 .task-meta {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 2px 10px;
   font-size: 0.75rem;
   color: var(--text-dim);
 }
@@ -3007,3 +3008,30 @@ main {
 
 /* З відкритою клавіатурою нижній відступ під «смужку» iPhone не потрібен */
 .keyboard-open .sheet-panel { padding-bottom: 16px; }
+
+/* ---------- Тривалість задачі ---------- */
+
+.meta-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.estimate-picker { padding: 10px 14px 12px 44px; }
+
+.estimate-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.estimate-stepper {
+  justify-content: flex-start;
+  margin-top: 12px;
+}
+
+.estimate-value {
+  min-width: 96px;
+  text-align: center;
+  font-size: 1rem;
+}

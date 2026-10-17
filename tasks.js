@@ -24,6 +24,19 @@ const WEEKDAYS = [
   { d: 5, short: 'Пт' }, { d: 6, short: 'Сб' }, { d: 0, short: 'Нд' },
 ];
 
+// Тривалість (естімейт) задачі в хвилинах — обов'язкова, за замовчуванням 1 година
+const ESTIMATE_DEFAULT = 60;
+const ESTIMATE_STEP = 15;
+const ESTIMATE_MAX = 12 * 60;
+const ESTIMATE_PRESETS = [15, 30, 45, 60, 90, 120, 180, 240];
+
+function formatEstimate(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (!h) return `${m} хв`;
+  return m ? `${h} год ${m} хв` : `${h} год`;
+}
+
 const INTERVAL_MIN = 2;
 const INTERVAL_MAX = 30;
 
@@ -267,6 +280,7 @@ const tasksWeek = createWeekPicker(document.getElementById('tasks-week'), {
 const FLAG_SVG = '<svg class="task-flag" viewBox="0 0 24 24" role="img" aria-label="Високий пріоритет"><rect x="4" y="2.5" width="2.2" height="19" rx="1.1"/><path d="M6.2 3.5h12.3c.5 0 .8.6.5 1l-2.6 3.8 2.6 3.8c.3.4 0 1-.5 1H6.2z"/></svg>';
 const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const CROSS_SVG = '<svg class="cross" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+const CLOCK_SVG = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 const REPEAT_SVG = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>';
 const STORAGE_DONE_COLLAPSED = 'daily-tasks-done-collapsed';
 
@@ -343,9 +357,20 @@ function renderTaskRow(task) {
     </button>`;
   row.querySelector('.task-title span').textContent = task.title;
   const meta = repeatLabel(task.repeat);
+  const metaEl = row.querySelector('.task-meta');
+  if (task.estimate) {
+    const part = document.createElement('span');
+    part.className = 'meta-part';
+    part.innerHTML = CLOCK_SVG;
+    part.append(formatEstimate(task.estimate));
+    metaEl.appendChild(part);
+  }
   if (meta) {
-    row.querySelector('.task-meta').innerHTML = REPEAT_SVG;
-    row.querySelector('.task-meta').append(meta);
+    const part = document.createElement('span');
+    part.className = 'meta-part';
+    part.innerHTML = REPEAT_SVG;
+    part.append(meta);
+    metaEl.appendChild(part);
   }
   if (isPenalized(task, currentDate)) {
     row.classList.add('penalized');
@@ -810,6 +835,9 @@ let sheetRepeat = null;
 let sheetStar = false;
 let sheetDate = null;
 const sheetFlag = document.getElementById('task-sheet-flag');
+const sheetEstimateRow = document.getElementById('task-sheet-estimate-row');
+const sheetEstimatePicker = document.getElementById('task-sheet-estimate');
+let sheetEstimate = ESTIMATE_DEFAULT;
 const sheetDateInput = document.getElementById('task-sheet-date');
 const sheetRepeatRow = document.getElementById('task-sheet-repeat-row');
 const sheetRepeatList = document.getElementById('task-sheet-repeat');
@@ -838,6 +866,9 @@ function openTaskSheet(task) {
   sheetStar = Boolean(task?.star);
   sheetDate = task ? task.start : currentDate;
   sheetFlag.checked = Boolean(task?.flag);
+  sheetEstimate = task?.estimate || ESTIMATE_DEFAULT;
+  setEstimateOpen(false);
+  renderSheetEstimate();
   renderSheetType();
   updateSheetSave();
   renderSheetDate();
@@ -884,6 +915,47 @@ sheetDateInput.addEventListener('click', () => {
     sheetDateInput.showPicker?.();
   } catch {}
 });
+
+// ---------- Тривалість ----------
+
+function setEstimateOpen(open) {
+  sheetEstimatePicker.hidden = !open;
+  sheetEstimateRow.classList.toggle('open', open);
+  sheetEstimateRow.setAttribute('aria-expanded', open);
+}
+
+sheetEstimateRow.addEventListener('click', () => setEstimateOpen(sheetEstimatePicker.hidden));
+
+function renderSheetEstimate() {
+  document.getElementById('task-sheet-estimate-label').textContent = formatEstimate(sheetEstimate);
+  document.getElementById('estimate-value').textContent = formatEstimate(sheetEstimate);
+  const presets = sheetEstimatePicker.querySelector('.estimate-presets');
+  presets.innerHTML = '';
+  ESTIMATE_PRESETS.forEach((minutes) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip' + (minutes === sheetEstimate ? ' active' : '');
+    chip.textContent = presetLabel(minutes);
+    chip.addEventListener('click', () => {
+      sheetEstimate = minutes;
+      renderSheetEstimate();
+    });
+    presets.appendChild(chip);
+  });
+}
+
+// Коротші підписи для кнопок швидкого вибору: «1,5 год» замість «1 год 30 хв»
+function presetLabel(minutes) {
+  return minutes > 60 && minutes % 60 === 30 ? `${Math.floor(minutes / 60)},5 год` : formatEstimate(minutes);
+}
+
+function changeEstimate(delta) {
+  sheetEstimate = Math.min(ESTIMATE_MAX, Math.max(ESTIMATE_STEP, sheetEstimate + delta));
+  renderSheetEstimate();
+}
+
+document.getElementById('estimate-minus').addEventListener('click', () => changeEstimate(-ESTIMATE_STEP));
+document.getElementById('estimate-plus').addEventListener('click', () => changeEstimate(ESTIMATE_STEP));
 
 function setRepeatListOpen(open) {
   sheetRepeatList.hidden = !open;
@@ -966,6 +1038,7 @@ function saveTaskSheet() {
     sheetTask.title = title;
     sheetTask.star = sheetStar;
     sheetTask.flag = sheetFlag.checked;
+    sheetTask.estimate = sheetEstimate;
     sheetTask.repeat = sheetRepeat;
     sheetTask.start = sheetDate;
   } else {
@@ -974,6 +1047,7 @@ function saveTaskSheet() {
       title,
       star: sheetStar,
       flag: sheetFlag.checked,
+      estimate: sheetEstimate,
       start: sheetDate,
       repeat: sheetRepeat,
       until: null,
