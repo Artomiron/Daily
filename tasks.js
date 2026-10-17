@@ -1183,20 +1183,24 @@ function renderMoveButton(task) {
 
 // Задача лишається в минулому дні невиконаною (як історія), а на наступний день
 // з'являється її разова копія — повтор оригіналу при цьому не змінюється
-function moveTaskToNextDay(task, date) {
-  const target = shiftDate(date, 1);
-  const moved = {
+function movedCopy(task, date) {
+  return {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     title: task.title,
     flag: task.flag,
     estimate: task.estimate,
-    start: target,
+    start: shiftDate(date, 1),
     repeat: { type: 'none' },
     until: null,
     movedFrom: date,
     movedFromId: task.id,
     createdAt: new Date().toISOString(),
   };
+}
+
+function moveTaskToNextDay(task, date) {
+  const target = shiftDate(date, 1);
+  const moved = movedCopy(task, date);
   withTaskUndo(`Перенесено ${moveTargetLabel(target)}`, () => {
     taskStore.tasks.push(moved);
   });
@@ -1551,3 +1555,98 @@ function renderTaskStatsList(stats) {
       list.appendChild(row);
     });
 }
+
+// ---------- Ранковий звіт за вчора ----------
+// Показуємо раз на день при першому відкритті, якщо вчора були заплановані справи:
+// зірки дня, скільки виконано, час у справах, план на сьогодні й перенесення незавершеного.
+
+const STORAGE_REPORT = 'daily-report-date';
+const dayReport = document.getElementById('day-report');
+let dayReportAfter = null;
+
+const REPORT_COPY = [
+  { title: 'Кожен крок важливий 💪', texts: ['Новий день — нові можливості. Почніть з однієї справи!', 'Сьогодні чудовий день, щоб набрати темп.'] },
+  { title: 'Гарний день! ⭐', texts: ['Вчора ви добре попрацювали — сьогодні буде ще краще!', 'Гарний ритм! Тримайте його й сьогодні.'] },
+  { title: 'Чудовий день! 🌟', texts: ['Нехай цей день буде ще яскравішим!', 'Вчора ви були в ударі — продовжуйте в тому ж дусі!'] },
+  { title: 'Неймовірний день! 💫', texts: ['Вчора ви були неймовірні — нехай сьогодні буде так само яскраво!', 'Легендарний результат! Цей запал — ваша суперсила.'] },
+];
+
+function pluralUnfinished(n) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'незавершену';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'незавершені';
+  return 'незавершених';
+}
+
+// Показує звіт, якщо сьогодні його ще не було; after виконається, коли звіт закриють (або одразу)
+function showDayReport(after) {
+  const today = todayISO();
+  const yesterday = shiftDate(today, -1);
+  let shown = null;
+  try {
+    shown = localStorage.getItem(STORAGE_REPORT);
+  } catch {}
+  const tasks = tasksForDate(yesterday);
+  if (shown === today || !tasks.length) {
+    if (after) after();
+    return;
+  }
+  try {
+    localStorage.setItem(STORAGE_REPORT, today);
+  } catch {}
+  dayReportAfter = after;
+
+  const done = tasks.filter((t) => isTaskDone(t, yesterday));
+  const stars = dayStarsOn(yesterday);
+  // Фактичний час, а де його не вказали — естімейт
+  const minutes = done.reduce((sum, t) => sum + (taskStore.actual[yesterday]?.[t.id] || t.estimate || 0), 0);
+  const copy = REPORT_COPY[stars];
+
+  document.getElementById('day-report-date').textContent = `Вчора, ${formatDayMonth(yesterday)}`;
+  document.getElementById('day-report-stars').innerHTML = STAR_TIERS.map((_, i) => `
+    <svg class="popup-day-star${i < stars ? ' on' : ''}" viewBox="0 0 24 24" style="--i:${i}">
+      <path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z"/>
+    </svg>`).join('');
+  document.getElementById('day-report-title').textContent = copy.title;
+  document.getElementById('day-report-done').innerHTML = `${done.length}<span class="stat-max">/${tasks.length}</span>`;
+  document.getElementById('day-report-time').textContent = minutes ? formatEstimate(minutes) : '—';
+
+  const todayTasks = tasksForDate(today);
+  document.getElementById('day-report-today').textContent = todayTasks.length
+    ? `Сьогодні ${todayTasks.length} ${pluralTasks(todayTasks.length)} · ~${formatEstimate(plannedMinutes(today))}`
+    : 'На сьогодні ще нічого не заплановано';
+  document.getElementById('day-report-phrase').textContent = copy.texts[Math.floor(Math.random() * copy.texts.length)];
+
+  const movable = tasks.filter((t) => !isTaskDone(t, yesterday) && canMoveToNextDay(t, yesterday));
+  const moveBtn = document.getElementById('day-report-move');
+  moveBtn.hidden = !movable.length;
+  moveBtn.textContent = `→ Перенести ${movable.length} ${pluralUnfinished(movable.length)} на сьогодні`;
+  moveBtn.onclick = () => {
+    closeDayReport();
+    withTaskUndo(`Перенесено на сьогодні: ${movable.length}`, () => {
+      movable.forEach((t) => taskStore.tasks.push(movedCopy(t, yesterday)));
+    });
+    if (plannedMinutes(today) > DAY_PLAN_LIMIT) showOverloadPopup(taskStore.tasks[taskStore.tasks.length - 1]);
+  };
+
+  dayReport.hidden = false;
+}
+
+function closeDayReport() {
+  if (dayReport.hidden) return;
+  dayReport.hidden = true;
+  const after = dayReportAfter;
+  dayReportAfter = null;
+  if (after) after();
+}
+
+document.getElementById('day-report-start').addEventListener('click', () => {
+  closeDayReport();
+  if (currentDate !== todayISO()) setDate(todayISO());
+  switchTab('tasks');
+});
+dayReport.addEventListener('click', (e) => {
+  if (e.target === dayReport) closeDayReport();
+});
+attachSheetDrag(dayReport, closeDayReport);

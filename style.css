@@ -3534,3 +3534,76 @@ main {
 .tier-progress.complete .tasks-progress-text { color: var(--accent-green); }
 
 .star-widget[hidden] { display: none; }
+
+/* ---------- Ранковий звіт за вчора ---------- */
+
+.day-report .sheet-panel { padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
+
+.day-report-date {
+  margin: 4px 0 6px;
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.day-report-stars {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  height: 64px;
+  margin-top: 6px;
+}
+
+.day-report-stars .popup-day-star { width: 42px; height: 42px; }
+.day-report-stars .popup-day-star:nth-child(2) { width: 56px; height: 56px; margin-top: -18px; }
+
+.day-report-title {
+  margin: 4px 0 14px;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #FFD54A;
+}
+
+.day-report-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.day-report-today {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(155, 125, 255, 0.1);
+  border: 1px solid rgba(155, 125, 255, 0.3);
+}
+
+.day-report-sun { font-size: 1.4rem; }
+
+.day-report-today b { display: block; font-size: 0.95rem; }
+
+.day-report-today span:not(.day-report-sun) { font-size: 0.85rem; color: var(--text-dim); }
+
+.day-report-move {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 10px;
+  border-radius: 23px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.day-report-move[hidden] { display: none; }
+.day-report .stat-tile { background: var(--bg); }

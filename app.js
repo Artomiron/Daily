@@ -779,19 +779,26 @@ function mergeEntries(existing, incoming) {
 // ---------- Ініціалізація ----------
 
 renderToday();
-announcePenalties(settlePenalties());
+const startupPenalties = settlePenalties();
 renderTasks();
 // За замовчуванням відкриваються «Задачі»; з нагадування про оцінку дня — «Сьогодні»
 if (location.hash === '#today') {
   switchTab('today');
   history.replaceState(null, '', location.pathname + location.search);
+  announcePenalties(startupPenalties);
+} else {
+  // Ранковий звіт за вчора; тост про штрафи — вже після нього
+  showDayReport(() => announcePenalties(startupPenalties));
 }
 
 // Якщо застосунок лишався відкритим через північ — повертаємось на новий день
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
   const today = todayISO();
-  if (lastSeenToday !== today) announcePenalties(settlePenalties());
+  if (lastSeenToday !== today) {
+    const missed = settlePenalties();
+    showDayReport(() => announcePenalties(missed));
+  }
   if (lastSeenToday !== today && currentDate === lastSeenToday) setDate(today);
   lastSeenToday = today;
 });

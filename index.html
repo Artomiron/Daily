@@ -316,6 +316,28 @@
   </div>
 </div>
 
+<section id="day-report" class="sheet day-report" hidden>
+  <div class="sheet-panel" role="dialog" aria-labelledby="day-report-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <p id="day-report-date" class="day-report-date"></p>
+    <div id="day-report-stars" class="day-report-stars" aria-hidden="true"></div>
+    <h2 id="day-report-title" class="day-report-title"></h2>
+    <div class="day-report-tiles">
+      <div class="stat-tile"><div id="day-report-done" class="stat-value"></div><div class="stat-label">Справ виконано</div></div>
+      <div class="stat-tile"><div id="day-report-time" class="stat-value"></div><div class="stat-label">Часу в справах</div></div>
+    </div>
+    <div class="day-report-today">
+      <span class="day-report-sun" aria-hidden="true">☀️</span>
+      <div>
+        <b id="day-report-today"></b>
+        <span id="day-report-phrase"></span>
+      </div>
+    </div>
+    <button type="button" id="day-report-start" class="star-popup-btn">Почати день 🚀</button>
+    <button type="button" id="day-report-move" class="day-report-move" hidden></button>
+  </div>
+</section>
+
 <section id="time-dialog" class="sheet time-dialog" hidden>
   <div class="sheet-panel" role="dialog" aria-labelledby="time-dialog-title">
     <div class="sheet-handle" aria-hidden="true"></div>
