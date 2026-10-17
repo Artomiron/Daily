@@ -427,9 +427,14 @@ function renderTasks() {
   // У минулому дні невиконані теж збираються в свій розділ «Не виконано»
   const openTasks = tasks.filter((t) => !isTaskDone(t, currentDate));
   const doneTasks = tasks.filter((t) => isTaskDone(t, currentDate));
-  if (currentDate < todayISO()) renderTaskSection(list, 'missed', openTasks);
-  else openTasks.forEach((task) => list.appendChild(renderTaskRow(task)));
-  renderTaskSection(list, 'done', doneTasks);
+  // У минулому дні спершу показуємо виконане — фокус на досягненнях
+  if (currentDate < todayISO()) {
+    renderTaskSection(list, 'done', doneTasks);
+    renderTaskSection(list, 'missed', openTasks);
+  } else {
+    openTasks.forEach((task) => list.appendChild(renderTaskRow(task)));
+    renderTaskSection(list, 'done', doneTasks);
+  }
 }
 
 function renderTaskRow(task) {
@@ -467,6 +472,15 @@ function renderTaskRow(task) {
     part.className = 'meta-part';
     part.innerHTML = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6v5a4 4 0 0 0 4 4h11M15 11l4 4-4 4"/></svg>';
     part.append(`з ${formatDayMonth(task.movedFrom)}`);
+    metaEl.appendChild(part);
+  }
+  // Невиконана задача, яку вже перенесли: лишається в минулому дні з позначкою, куди саме
+  const movedTo = missed && movedCopyOf(task, currentDate);
+  if (movedTo) {
+    const part = document.createElement('span');
+    part.className = 'meta-part';
+    part.innerHTML = '<svg class="meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>';
+    part.append(`перенесено ${moveTargetLabel(movedTo.start)}`);
     metaEl.appendChild(part);
   }
   if (isPenalized(task, currentDate)) {
@@ -1105,10 +1119,15 @@ function moveTargetLabel(date) {
   return date === todayISO() ? 'на сьогодні' : `на ${formatDayMonth(date)}`;
 }
 
+// Копія, створена перенесенням цієї задачі з цього дня
+function movedCopyOf(task, date) {
+  return taskStore.tasks.find((t) => t.movedFromId === task.id && t.movedFrom === date);
+}
+
 // Не переносимо щоденні задачі (вони й так будуть завтра) і не створюємо дублікатів:
 // якщо в наступному дні вже є ця ж повторювана задача або задача з такою самою назвою
 function canMoveToNextDay(task, date) {
-  if (task.repeat.type === 'daily') return false;
+  if (task.repeat.type === 'daily' || movedCopyOf(task, date)) return false;
   const target = shiftDate(date, 1);
   if (taskOccursOn(task, target)) return false;
   const sameTitle = (t) => t.title.trim().toLowerCase() === task.title.trim().toLowerCase();
@@ -1127,31 +1146,25 @@ function renderMoveButton(task) {
   return btn;
 }
 
-// Разова задача просто переїжджає; у повторюваної пропускаємо цей день
-// і створюємо разову копію на наступний, щоб не ламати сам повтор
+// Задача лишається в минулому дні невиконаною (як історія), а на наступний день
+// з'являється її разова копія — повтор оригіналу при цьому не змінюється
 function moveTaskToNextDay(task, date) {
   const target = shiftDate(date, 1);
-  let moved = task;
+  const moved = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    title: task.title,
+    star: task.star,
+    flag: task.flag,
+    estimate: task.estimate,
+    start: target,
+    repeat: { type: 'none' },
+    until: null,
+    movedFrom: date,
+    movedFromId: task.id,
+    createdAt: new Date().toISOString(),
+  };
   withTaskUndo(`Перенесено ${moveTargetLabel(target)}`, () => {
-    if (task.repeat.type === 'none') {
-      task.start = target;
-      task.movedFrom = date;
-    } else {
-      deleteTaskOccurrence(task, date);
-      moved = {
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        title: task.title,
-        star: task.star,
-        flag: task.flag,
-        estimate: task.estimate,
-        start: target,
-        repeat: { type: 'none' },
-        until: null,
-        movedFrom: date,
-        createdAt: new Date().toISOString(),
-      };
-      taskStore.tasks.push(moved);
-    }
+    taskStore.tasks.push(moved);
   });
   if (plannedMinutes(target) > DAY_PLAN_LIMIT) showOverloadPopup(moved);
 }
