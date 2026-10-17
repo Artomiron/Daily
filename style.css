@@ -3035,3 +3035,62 @@ main {
   text-align: center;
   font-size: 1rem;
 }
+
+/* ---------- Попап «плани занадто амбіційні» ---------- */
+
+.overload-popup .star-popup-card {
+  background: linear-gradient(180deg, #2b2216, var(--bg-card) 55%);
+  border-color: rgba(255, 159, 10, 0.4);
+}
+
+.overload-icon {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: rgba(255, 159, 10, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: overload-tick 1.6s ease-in-out 0.3s 2;
+}
+
+.overload-icon svg {
+  width: 40px;
+  height: 40px;
+  fill: none;
+  stroke: #ff9f0a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes overload-tick {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-10deg); }
+  40% { transform: rotate(8deg); }
+  60% { transform: rotate(-5deg); }
+  80% { transform: rotate(3deg); }
+}
+
+.overload-popup .star-popup-title { color: #ffb340; }
+
+.overload-popup .star-popup-btn {
+  background: linear-gradient(135deg, #ffb340, #ff9f0a);
+}
+
+.overload-move {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overload-icon { animation: none; }
+}

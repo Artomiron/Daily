@@ -29,12 +29,15 @@ const ESTIMATE_DEFAULT = 60;
 const ESTIMATE_STEP = 15;
 const ESTIMATE_MAX = 12 * 60;
 const ESTIMATE_PRESETS = [15, 30, 45, 60, 90, 120, 180, 240];
+// Більше цього на день — попереджаємо, що плани занадто амбіційні
+const DAY_PLAN_LIMIT = 8 * 60;
 
+// Число й одиницю з'єднуємо нерозривним пробілом, щоб «30» і «хв» не розривало між рядками
 function formatEstimate(minutes) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (!h) return `${m} хв`;
-  return m ? `${h} год ${m} хв` : `${h} год`;
+  if (!h) return `${m}\u00a0хв`;
+  return m ? `${h}\u00a0год ${m}\u00a0хв` : `${h}\u00a0год`;
 }
 
 const INTERVAL_MIN = 2;
@@ -946,7 +949,7 @@ function renderSheetEstimate() {
 
 // Коротші підписи для кнопок швидкого вибору: «1,5 год» замість «1 год 30 хв»
 function presetLabel(minutes) {
-  return minutes > 60 && minutes % 60 === 30 ? `${Math.floor(minutes / 60)},5 год` : formatEstimate(minutes);
+  return minutes > 60 && minutes % 60 === 30 ? `${Math.floor(minutes / 60)},5\u00a0год` : formatEstimate(minutes);
 }
 
 function changeEstimate(delta) {
@@ -1029,6 +1032,7 @@ function deleteTaskFrom(task, date) {
 }
 
 function saveTaskSheet() {
+  let newTask = null;
   const title = sheetTitleInput.value.trim();
   if (!title) {
     sheetTitleInput.focus();
@@ -1042,7 +1046,7 @@ function saveTaskSheet() {
     sheetTask.repeat = sheetRepeat;
     sheetTask.start = sheetDate;
   } else {
-    taskStore.tasks.push({
+    newTask = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       title,
       star: sheetStar,
@@ -1052,17 +1056,61 @@ function saveTaskSheet() {
       repeat: sheetRepeat,
       until: null,
       createdAt: new Date().toISOString(),
-    });
+    };
+    taskStore.tasks.push(newTask);
   }
   const addedElsewhere = !sheetTask && sheetDate !== currentDate;
   saveTasks();
-  if (addedElsewhere) showToast(`Додано на ${formatDate(sheetDate, 'long')}`, 2200);
+  if (addedElsewhere) showToast(`Додано на ${formatDayMonth(sheetDate)}`, 2200);
   else flashSaved();
   closeTaskSheet();
   renderTasks();
+  // Задачу створено, але якщо день перевантажено — чесно попереджаємо (щоразу)
+  if (newTask && plannedMinutes(newTask.start) > DAY_PLAN_LIMIT) showOverloadPopup(newTask);
 }
 
 sheetSaveBtn.addEventListener('click', saveTaskSheet);
+
+// ---------- Перевантажений день ----------
+
+// «18 жовтня» — без дня тижня, бо після «на» він мав би стояти в знахідному відмінку
+function formatDayMonth(date) {
+  return fromISODate(date).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' });
+}
+
+// Сума тривалостей усіх задач дня; старі задачі без тривалості не враховуються
+function plannedMinutes(date) {
+  return tasksForDate(date).reduce((sum, task) => sum + (task.estimate || 0), 0);
+}
+
+const overloadPopup = document.getElementById('overload-popup');
+let overloadTask = null;
+
+function showOverloadPopup(task) {
+  overloadTask = task;
+  const total = plannedMinutes(task.start);
+  const day = task.start === todayISO() ? 'на сьогодні' : `на ${formatDayMonth(task.start)}`;
+  document.getElementById('overload-text').textContent =
+    `Заплановано ${day} вже ${formatEstimate(total)} — це більше за ${formatEstimate(DAY_PLAN_LIMIT)}. `
+    + 'На все може не вистачити часу. Можливо, варто перенести щось на інший день?';
+  overloadPopup.hidden = false;
+}
+
+function closeOverloadPopup() {
+  overloadPopup.hidden = true;
+  overloadTask = null;
+}
+
+document.getElementById('overload-keep').addEventListener('click', closeOverloadPopup);
+document.getElementById('overload-move').addEventListener('click', () => {
+  const task = overloadTask;
+  closeOverloadPopup();
+  // Відкриваємо щойно створену задачу — у шторці можна змінити дату
+  if (task) openTaskSheet(task);
+});
+overloadPopup.addEventListener('click', (e) => {
+  if (e.target === overloadPopup) closeOverloadPopup();
+});
 attachSheetDrag(taskSheet, closeTaskSheet);
 
 document.getElementById('task-sheet-cancel').addEventListener('click', closeTaskSheet);
