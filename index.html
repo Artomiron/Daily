@@ -167,12 +167,21 @@
     <div id="stats-tasks" hidden>
       <div id="task-stats-summary" class="stats-summary"></div>
       <div class="card">
-        <h2 class="card-title">Виконання по днях</h2>
+        <h2 class="card-title">Виконано за день</h2>
         <div class="chart-legend">
-          <span><i class="dot dot-physical"></i>Усе виконано</span>
+          <span><i class="dot dot-physical"></i>Виконано все заплановане</span>
           <span><i class="dot dot-mental"></i>Частково</span>
         </div>
         <div id="task-stats-chart" class="completion-chart"></div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">План і факт</h2>
+        <div class="chart-legend">
+          <span><i class="dot dot-plan"></i>За планом</span>
+          <span><i class="dot dot-energy"></i>Фактично</span>
+        </div>
+        <div id="time-stats-chart" class="completion-chart time-chart"></div>
+        <p id="time-stats-summary" class="card-hint time-stats-summary"></p>
       </div>
       <div class="card">
         <h2 class="card-title">Як виконуються задачі</h2>
@@ -313,6 +322,21 @@
   </div>
 </div>
 
+<section id="time-dialog" class="sheet time-dialog" hidden>
+  <div class="sheet-panel" role="dialog" aria-labelledby="time-dialog-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="sheet-nav time-dialog-nav">
+      <h2 id="time-dialog-title" class="sheet-nav-title">Скільки часу пішло?</h2>
+    </div>
+    <p id="time-dialog-task" class="time-dialog-task"></p>
+    <p id="time-dialog-plan" class="time-dialog-plan"></p>
+    <div id="time-dialog-picker" class="sheet-group time-dialog-picker"></div>
+    <p id="time-dialog-diff" class="time-dialog-diff"></p>
+    <button type="button" id="time-dialog-save" class="primary-btn time-dialog-save"></button>
+    <button type="button" id="time-dialog-skip" class="overload-move">Пропустити</button>
+  </div>
+</section>
+
 <section id="task-sheet" class="sheet" hidden>
   <div class="sheet-panel" role="dialog" aria-labelledby="task-sheet-heading">
     <div class="sheet-handle" aria-hidden="true"></div>
@@ -351,15 +375,7 @@
         <span id="task-sheet-estimate-label" class="sheet-row-value"></span>
         <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </button>
-      <div id="task-sheet-estimate" class="repeat-list estimate-picker" hidden>
-        <div class="wheel-picker">
-          <div class="wheel-band" aria-hidden="true"></div>
-          <div class="wheel" id="estimate-hours" role="listbox" aria-label="Години" tabindex="0"></div>
-          <span class="wheel-unit">год</span>
-          <div class="wheel" id="estimate-minutes" role="listbox" aria-label="Хвилини" tabindex="0"></div>
-          <span class="wheel-unit">хв</span>
-        </div>
-      </div>
+      <div id="task-sheet-estimate" class="repeat-list estimate-picker" hidden></div>
       <label class="sheet-row">
         <svg class="sheet-row-icon flag-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2.5" width="2.2" height="19" rx="1.1"/><path d="M6.2 3.5h12.3c.5 0 .8.6.5 1l-2.6 3.8 2.6 3.8c.3.4 0 1-.5 1H6.2z"/></svg>
         <span class="sheet-row-title">Високий пріоритет</span>

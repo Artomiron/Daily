@@ -7,6 +7,7 @@
 // Задача з прапорцем (flag: true) — високий пріоритет: якщо її не виконано до кінця дня,
 // від балансу знімається 1/5 зірки. Минулі дні «закриваються» при наступному запуску (penalties),
 // settledThrough — останній уже підбитий день.
+// actual: { date: { id: хвилини } } — фактично затрачений час, який вказали після виконання.
 
 const STORAGE_TASKS = 'daily-tasks';
 
@@ -68,10 +69,11 @@ function loadTasks() {
       skipped: data.skipped || {},
       starDone: data.starDone || {},
       penalties: data.penalties || {},
+      actual: data.actual || {},
       settledThrough: data.settledThrough || null,
     };
   } catch {
-    return { tasks: [], done: {}, skipped: {}, starDone: {}, penalties: {}, settledThrough: null };
+    return { tasks: [], done: {}, skipped: {}, starDone: {}, penalties: {}, actual: {}, settledThrough: null };
   }
 }
 
@@ -257,6 +259,80 @@ function renderIntervalPicker(repeat, onChange) {
   box.querySelector('.interval-minus').addEventListener('click', () => change(-1));
   box.querySelector('.interval-plus').addEventListener('click', () => change(1));
   return box;
+}
+
+// ---------- Барабани тривалості ----------
+// Класичний вибір часу, як в iOS: барабани «год» (0–12) і «хв» (крок 5 хв) зі «клацанням» на значеннях.
+// Використовується в шторці задачі й у діалозі фактичного часу. set() викликати, коли барабани видимі.
+
+const WHEEL_ROW = 36;
+
+function createDurationPicker(root, onChange) {
+  root.insertAdjacentHTML('beforeend', `
+    <div class="wheel-picker">
+      <div class="wheel-band" aria-hidden="true"></div>
+      <div class="wheel wheel-hours" role="listbox" aria-label="Години" tabindex="0"></div>
+      <span class="wheel-unit">год</span>
+      <div class="wheel wheel-minutes" role="listbox" aria-label="Хвилини" tabindex="0"></div>
+      <span class="wheel-unit">хв</span>
+    </div>`);
+  const hours = root.querySelector('.wheel-hours');
+  const minutes = root.querySelector('.wheel-minutes');
+
+  const fill = (wheel, values) => {
+    values.forEach((value, i) => {
+      const item = document.createElement('div');
+      item.className = 'wheel-item';
+      item.setAttribute('role', 'option');
+      item.textContent = String(value).padStart(2, '0');
+      item.addEventListener('click', () => wheel.scrollTo({ top: i * WHEEL_ROW, behavior: 'smooth' }));
+      wheel.appendChild(item);
+    });
+  };
+  fill(hours, Array.from({ length: ESTIMATE_MAX_HOURS + 1 }, (_, i) => i));
+  fill(minutes, Array.from({ length: 60 / ESTIMATE_STEP }, (_, i) => i * ESTIMATE_STEP));
+
+  const index = (wheel) => Math.max(0, Math.min(wheel.children.length - 1, Math.round(wheel.scrollTop / WHEEL_ROW)));
+  const mark = (wheel) => {
+    const current = index(wheel);
+    [...wheel.children].forEach((item, i) => {
+      item.classList.toggle('selected', i === current);
+      item.setAttribute('aria-selected', i === current);
+    });
+  };
+  const read = () => {
+    const value = index(hours) * 60 + index(minutes) * ESTIMATE_STEP;
+    // 0 год 0 хв не буває — мінімум 5 хвилин
+    if (!value) {
+      minutes.scrollTo({ top: WHEEL_ROW, behavior: 'smooth' });
+      return ESTIMATE_STEP;
+    }
+    return value;
+  };
+
+  [hours, minutes].forEach((wheel) => {
+    let settleTimer = null;
+    wheel.addEventListener('scroll', () => {
+      mark(wheel);
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => onChange(read()), 120);
+    }, { passive: true });
+    // Клавіатура: стрілки змінюють значення на один крок
+    wheel.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      wheel.scrollBy({ top: e.key === 'ArrowDown' ? WHEEL_ROW : -WHEEL_ROW, behavior: 'smooth' });
+    });
+  });
+
+  return {
+    set(value) {
+      hours.scrollTop = Math.floor(value / 60) * WHEEL_ROW;
+      minutes.scrollTop = ((value % 60) / ESTIMATE_STEP) * WHEEL_ROW;
+      mark(hours);
+      mark(minutes);
+    },
+  };
 }
 
 // ---------- Вкладка «Задачі» ----------
@@ -540,6 +616,10 @@ function toggleTask(task, row, checkEl) {
   const pointsAfter = starPoints();
   saveTasks();
   if (!nowDone) {
+    // Фактичний час стосується лише виконаної задачі
+    const prevActual = taskStore.actual[date]?.[task.id];
+    setActual(task, date, null);
+    saveTasks();
     // Зняту відмітку легко повернути — без анімацій і повторного нарахування зірок
     const restored = JSON.stringify(taskStore);
     showUndo('Відмітку знято', () => {
@@ -547,6 +627,7 @@ function toggleTask(task, row, checkEl) {
       store.done[date] = [...new Set([...(store.done[date] || []), task.id])];
       if (wasStarCounted) store.starDone[date] = [...new Set([...(store.starDone[date] || []), task.id])];
       taskStore = store;
+      if (prevActual) setActual(task, date, prevActual);
       syncPenalty(task, date);
       saveTasks();
       renderTasks();
@@ -567,6 +648,8 @@ function toggleTask(task, row, checkEl) {
   }
 
   row.classList.add('just-done');
+  // Після анімації спитаємо фактичний час; святкування почекають, поки діалог закриють
+  timeDialogPending = true;
   burstFrom(checkEl, task.star ? STAR_COLORS : FX_COLORS);
   if (navigator.vibrate) navigator.vibrate(12);
   if (pointsAfter > pointsBefore) animateStarGain(checkEl, pointsAfter);
@@ -580,7 +663,8 @@ function toggleTask(task, row, checkEl) {
       const header = document.getElementById('done-header');
       if (header) pulse(header, 'bump');
     }
-    if (allDone) celebrateAllDone();
+    if (allDone) afterTimeDialog(celebrateAllDone);
+    openTimeDialog(task, date);
   }, 650);
 }
 
@@ -698,7 +782,7 @@ function animateStarGain(fromEl, points) {
     pulse(starWidget, 'star-gain');
     floatPlusOne();
     if (completesStar) {
-      setTimeout(() => celebrateStar(points / STAR_GOAL), 850);
+      setTimeout(() => afterTimeDialog(() => celebrateStar(points / STAR_GOAL)), 850);
     } else {
       starAnimating = false;
     }
@@ -943,78 +1027,17 @@ sheetDateInput.addEventListener('click', () => {
 function setEstimateOpen(open) {
   sheetEstimatePicker.hidden = !open;
   // Позицію барабанів можна виставити лише коли вони видимі
-  if (open) scrollWheelsTo(sheetEstimate);
+  if (open) estimatePicker.set(sheetEstimate);
   sheetEstimateRow.classList.toggle('open', open);
   sheetEstimateRow.setAttribute('aria-expanded', open);
 }
 
 sheetEstimateRow.addEventListener('click', () => setEstimateOpen(sheetEstimatePicker.hidden));
 
-// Класичний вибір часу: барабани «год» і «хв» (крок 5 хв) зі «клацанням» на значеннях
-const WHEEL_ROW = 36;
-const hoursWheel = document.getElementById('estimate-hours');
-const minutesWheel = document.getElementById('estimate-minutes');
-
-function fillWheel(wheel, values) {
-  wheel.innerHTML = '';
-  values.forEach((value) => {
-    const item = document.createElement('div');
-    item.className = 'wheel-item';
-    item.setAttribute('role', 'option');
-    item.textContent = String(value).padStart(2, '0');
-    item.addEventListener('click', () => wheel.scrollTo({ top: values.indexOf(value) * WHEEL_ROW, behavior: 'smooth' }));
-    wheel.appendChild(item);
-  });
-}
-
-fillWheel(hoursWheel, Array.from({ length: ESTIMATE_MAX_HOURS + 1 }, (_, i) => i));
-fillWheel(minutesWheel, Array.from({ length: 60 / ESTIMATE_STEP }, (_, i) => i * ESTIMATE_STEP));
-
-function wheelIndex(wheel) {
-  return Math.max(0, Math.min(wheel.children.length - 1, Math.round(wheel.scrollTop / WHEEL_ROW)));
-}
-
-function markWheel(wheel) {
-  const index = wheelIndex(wheel);
-  [...wheel.children].forEach((item, i) => {
-    item.classList.toggle('selected', i === index);
-    item.setAttribute('aria-selected', i === index);
-  });
-}
-
-function scrollWheelsTo(minutes) {
-  hoursWheel.scrollTop = Math.floor(minutes / 60) * WHEEL_ROW;
-  minutesWheel.scrollTop = ((minutes % 60) / ESTIMATE_STEP) * WHEEL_ROW;
-  markWheel(hoursWheel);
-  markWheel(minutesWheel);
-}
-
-function readWheels() {
-  const minutes = wheelIndex(hoursWheel) * 60 + wheelIndex(minutesWheel) * ESTIMATE_STEP;
-  // 0 год 0 хв не буває — мінімум 5 хвилин
-  if (!minutes) {
-    minutesWheel.scrollTo({ top: WHEEL_ROW, behavior: 'smooth' });
-    return ESTIMATE_STEP;
-  }
-  return minutes;
-}
-
-[hoursWheel, minutesWheel].forEach((wheel) => {
-  let settleTimer = null;
-  wheel.addEventListener('scroll', () => {
-    markWheel(wheel);
-    clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => {
-      sheetEstimate = readWheels();
-      renderSheetEstimate();
-    }, 120);
-  }, { passive: true });
-  // Клавіатура: стрілки змінюють значення на один крок
-  wheel.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-    e.preventDefault();
-    wheel.scrollBy({ top: e.key === 'ArrowDown' ? WHEEL_ROW : -WHEEL_ROW, behavior: 'smooth' });
-  });
+// Шторка задачі: барабани тривалості
+const estimatePicker = createDurationPicker(sheetEstimatePicker, (minutes) => {
+  sheetEstimate = minutes;
+  renderSheetEstimate();
 });
 
 function renderSheetEstimate() {
@@ -1256,9 +1279,85 @@ function mergeTaskStores(existing, incoming) {
     skipped: mergeMap(existing.skipped, incoming.skipped),
     starDone: mergeMap(existing.starDone, incoming.starDone),
     penalties: mergeMap(existing.penalties, incoming.penalties),
+    actual: Object.fromEntries(
+      [...new Set([...Object.keys(existing.actual || {}), ...Object.keys(incoming.actual || {})])]
+        .map((date) => [date, { ...(incoming.actual || {})[date], ...(existing.actual || {})[date] }]),
+    ),
     settledThrough: [existing.settledThrough, incoming.settledThrough].filter(Boolean).sort().pop() || null,
   };
 }
+
+// ---------- Фактично затрачений час ----------
+
+function setActual(task, date, minutes) {
+  const day = { ...(taskStore.actual[date] || {}) };
+  if (minutes) day[task.id] = minutes;
+  else delete day[task.id];
+  if (Object.keys(day).length) taskStore.actual[date] = day;
+  else delete taskStore.actual[date];
+}
+
+const timeDialog = document.getElementById('time-dialog');
+let timeDialogTask = null;
+let timeDialogDate = null;
+let timeDialogValue = ESTIMATE_DEFAULT;
+let timeDialogPending = false;
+let afterTimeDialogQueue = [];
+
+const timeDialogPicker = createDurationPicker(document.getElementById('time-dialog-picker'), (minutes) => {
+  timeDialogValue = minutes;
+  renderTimeDialogValue();
+});
+
+// Святкування (нова зірка, усе виконано) показуємо після діалогу, щоб попапи не накладались
+function afterTimeDialog(fn) {
+  if (timeDialogPending || !timeDialog.hidden) afterTimeDialogQueue.push(fn);
+  else fn();
+}
+
+function openTimeDialog(task, date) {
+  timeDialogTask = task;
+  timeDialogDate = date;
+  const planned = task.estimate || ESTIMATE_DEFAULT;
+  timeDialogValue = planned;
+  document.getElementById('time-dialog-task').textContent = task.title;
+  document.getElementById('time-dialog-plan').textContent = `За планом: ${formatEstimate(planned)}`;
+  renderTimeDialogValue();
+  timeDialog.hidden = false;
+  timeDialogPicker.set(planned);
+}
+
+function renderTimeDialogValue() {
+  const planned = timeDialogTask?.estimate || ESTIMATE_DEFAULT;
+  const diff = timeDialogValue - planned;
+  const save = document.getElementById('time-dialog-save');
+  save.textContent = diff === 0 ? `Так, ${formatEstimate(planned)}` : `Зберегти ${formatEstimate(timeDialogValue)}`;
+  document.getElementById('time-dialog-diff').textContent = diff === 0
+    ? 'Збігається з планом'
+    : diff > 0 ? `На ${formatEstimate(diff)} довше за план` : `На ${formatEstimate(-diff)} швидше за план`;
+  document.getElementById('time-dialog-diff').className = 'time-dialog-diff' + (diff > 0 ? ' over' : diff < 0 ? ' under' : '');
+}
+
+function closeTimeDialog(save) {
+  if (save && timeDialogTask && isTaskDone(timeDialogTask, timeDialogDate)) {
+    setActual(timeDialogTask, timeDialogDate, timeDialogValue);
+    saveTasks();
+    flashSaved();
+  }
+  timeDialog.hidden = true;
+  timeDialogTask = null;
+  timeDialogPending = false;
+  const queue = afterTimeDialogQueue;
+  afterTimeDialogQueue = [];
+  queue.forEach((fn) => fn());
+}
+
+document.getElementById('time-dialog-save').addEventListener('click', () => closeTimeDialog(true));
+document.getElementById('time-dialog-skip').addEventListener('click', () => closeTimeDialog(false));
+timeDialog.addEventListener('click', (e) => {
+  if (e.target === timeDialog) closeTimeDialog(false);
+});
+attachSheetDrag(timeDialog, () => closeTimeDialog(false));
 
 // ---------- Статистика задач ----------
 
@@ -1281,7 +1380,15 @@ function renderTaskStats(dates) {
     if (tasks.length) daysWithTasks++;
     starPointsEarned += (taskStore.starDone[date] || []).length;
     penaltiesCount += (taskStore.penalties[date] || []).length;
-    perDay.push({ date, planned: tasks.length, done: dayDone.length });
+    // План і факт — лише для виконаних задач, де вказали фактичний час
+    const withActual = dayDone.filter((t) => taskStore.actual[date]?.[t.id]);
+    perDay.push({
+      date,
+      planned: tasks.length,
+      done: dayDone.length,
+      planMinutes: withActual.reduce((sum, t) => sum + (t.estimate || ESTIMATE_DEFAULT), 0),
+      actualMinutes: withActual.reduce((sum, t) => sum + taskStore.actual[date][t.id], 0),
+    });
     tasks.forEach((task) => {
       const s = perTask.get(task.id) || { task, planned: 0, done: 0 };
       s.planned++;
@@ -1305,28 +1412,69 @@ function renderTaskStats(dates) {
     .join('');
 
   renderCompletionChart(perDay);
+  renderTimeChart(perDay);
   renderTaskStatsList([...perTask.values()]);
 }
 
-// Стовпчики по днях: висота — частка виконаного, зелений — виконано все
+function chartLabel(perDay, i) {
+  const every = Math.ceil(perDay.length / 7);
+  return (perDay.length - 1 - i) % every === 0 ? fromISODate(perDay[i].date).getDate() : '';
+}
+
+// Скільки задач виконано за день; зелений стовпчик — виконано все заплановане
 function renderCompletionChart(perDay) {
   const chart = document.getElementById('task-stats-chart');
   chart.innerHTML = '';
   chart.classList.toggle('dense', perDay.length > 31);
-  const labelEvery = Math.ceil(perDay.length / 7);
+  const max = Math.max(1, ...perDay.map((d) => d.done));
   perDay.forEach((day, i) => {
-    const share = day.planned ? day.done / day.planned : 0;
     const col = document.createElement('div');
     col.className = 'completion-col';
-    col.title = `${capitalize(formatDate(day.date, 'short'))}: ${day.done} з ${day.planned}`;
-    const showLabel = (perDay.length - 1 - i) % labelEvery === 0;
+    col.title = `${capitalize(formatDate(day.date, 'short'))}: виконано ${day.done} з ${day.planned}`;
+    const full = day.planned && day.done === day.planned;
     col.innerHTML = `
       <div class="completion-track">
-        <div class="completion-bar${day.planned && share === 1 ? ' full' : ''}${day.planned ? '' : ' empty'}" style="height:${day.planned ? Math.max(6, share * 100) : 4}%"></div>
+        <div class="completion-bar${full ? ' full' : ''}${day.done ? '' : ' empty'}" style="height:${day.done ? (day.done / max) * 100 : 3}%">
+          ${day.done && perDay.length <= 14 ? `<span class="completion-value">${day.done}</span>` : ''}
+        </div>
       </div>
-      <span class="completion-label">${showLabel ? fromISODate(day.date).getDate() : ''}</span>`;
+      <span class="completion-label">${chartLabel(perDay, i)}</span>`;
     chart.appendChild(col);
   });
+}
+
+// Очікуваний і фактичний час виконаних задач по днях, парними стовпчиками
+function renderTimeChart(perDay) {
+  const chart = document.getElementById('time-stats-chart');
+  const summary = document.getElementById('time-stats-summary');
+  const planTotal = perDay.reduce((sum, d) => sum + d.planMinutes, 0);
+  const actualTotal = perDay.reduce((sum, d) => sum + d.actualMinutes, 0);
+  chart.innerHTML = '';
+  chart.hidden = !actualTotal;
+  if (!actualTotal) {
+    summary.textContent = 'Вказуйте фактичний час після виконання задач — тут з\'явиться порівняння з планом.';
+    return;
+  }
+  chart.classList.toggle('dense', perDay.length > 31);
+  const max = Math.max(...perDay.map((d) => Math.max(d.planMinutes, d.actualMinutes)));
+  perDay.forEach((day, i) => {
+    const col = document.createElement('div');
+    col.className = 'completion-col';
+    col.title = day.actualMinutes
+      ? `${capitalize(formatDate(day.date, 'short'))}: план ${formatEstimate(day.planMinutes)}, факт ${formatEstimate(day.actualMinutes)}`
+      : capitalize(formatDate(day.date, 'short'));
+    const h = (m) => (m ? Math.max(3, (m / max) * 100) : 0);
+    col.innerHTML = `
+      <div class="completion-track time-pair">
+        <div class="time-bar plan" style="height:${h(day.planMinutes)}%"></div>
+        <div class="time-bar actual" style="height:${h(day.actualMinutes)}%"></div>
+      </div>
+      <span class="completion-label">${chartLabel(perDay, i)}</span>`;
+    chart.appendChild(col);
+  });
+  const diff = Math.round(((actualTotal - planTotal) / planTotal) * 100);
+  const verdict = diff === 0 ? 'точно за планом' : diff > 0 ? `на ${diff}% довше за план` : `на ${-diff}% швидше за план`;
+  summary.textContent = `Фактично ${formatEstimate(actualTotal)} проти ${formatEstimate(planTotal)} за планом — ${verdict}.`;
 }
 
 // Найчастіше заплановані задачі й частка виконання — видно, що систематично пропускається

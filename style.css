@@ -3292,3 +3292,79 @@ main {
 }
 
 .done-header.section-missed:first-child { margin-top: 0; }
+
+/* ---------- Діалог фактичного часу ---------- */
+
+.time-dialog-nav { grid-template-columns: 1fr; text-align: center; }
+
+.time-dialog-task {
+  margin: 0;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.time-dialog-plan {
+  margin: 4px 0 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.time-dialog-picker { padding: 6px 12px; }
+
+.time-dialog-diff {
+  min-height: 1.2em;
+  margin: 10px 0 14px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.time-dialog-diff.over { color: #ffb340; }
+.time-dialog-diff.under { color: var(--accent-green); }
+
+.time-dialog-save {
+  width: 100%;
+  min-height: 50px;
+  border-radius: 25px;
+  font-size: 1rem;
+}
+
+/* ---------- Графіки статистики задач ---------- */
+
+.completion-bar {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.completion-value {
+  position: absolute;
+  top: -18px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.completion-chart { padding-top: 18px; }
+
+.time-chart[hidden] { display: none; }
+
+.time-pair { gap: 2px; }
+
+.time-bar {
+  flex: 1 1 0;
+  border-radius: 4px 4px 2px 2px;
+  transition: height 0.5s cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+
+.time-bar.plan { background: #5b5b66; }
+.time-bar.actual { background: var(--accent-warm); }
+
+.completion-chart.dense .time-pair { gap: 0; }
+
+.dot-plan { background: #5b5b66; }
+
+.time-stats-summary { margin: 12px 0 0; }
