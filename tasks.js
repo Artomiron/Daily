@@ -1601,7 +1601,8 @@ function showDayReport(after) {
   dayReportAfter = after;
 
   const done = tasks.filter((t) => isTaskDone(t, yesterday));
-  const stars = dayStarsOn(yesterday);
+  // День до нових правил зірок у балансі не рахувався — у звіті все одно показуємо, скільки зірок він вартий
+  const stars = yesterday < STAR_RULES_SINCE ? starsForCount(done.length) : dayStarsOn(yesterday);
   // Фактичний час, а де його не вказали — естімейт
   const minutes = done.reduce((sum, t) => sum + (taskStore.actual[yesterday]?.[t.id] || t.estimate || 0), 0);
   const copy = REPORT_COPY[stars];
