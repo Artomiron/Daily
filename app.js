@@ -1,6 +1,6 @@
 // Daily — щоденник стану, думок та вдячності
 
-const APP_VERSION = 'v1.6';
+const APP_VERSION = 'v1.7';
 const STORAGE_ENTRIES = 'daily-entries';
 
 // Психологічний стан — у circumplex.js, фізичний — у body.js
