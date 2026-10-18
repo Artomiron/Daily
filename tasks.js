@@ -1737,7 +1737,6 @@ function renderTaskStats(dates) {
   let daysWithTasks = 0;
   let starsEarnedInRange = 0;
   let penaltiesCount = 0;
-  const perTask = new Map();
   const perDay = [];
 
   dates.forEach((date) => {
@@ -1763,12 +1762,6 @@ function renderTaskStats(dates) {
       planMinutes: withActual.reduce((sum, t) => sum + (t.estimate || ESTIMATE_DEFAULT), 0),
       actualMinutes: withActual.reduce((sum, t) => sum + taskStore.actual[date][t.id], 0),
     });
-    tasks.forEach((task) => {
-      const s = perTask.get(task.id) || { task, planned: 0, done: 0 };
-      s.planned++;
-      if (isTaskDone(task, date)) s.done++;
-      perTask.set(task.id, s);
-    });
   });
 
   const rate = pastPlanned ? Math.round((pastDone / pastPlanned) * 100) : null;
@@ -1787,7 +1780,6 @@ function renderTaskStats(dates) {
 
   renderCompletionChart(perDay);
   renderTimeChart(perDay);
-  renderTaskStatsList([...perTask.values()]);
 }
 
 function chartLabel(perDay, i) {
@@ -1839,32 +1831,6 @@ function renderTimeChart(perDay) {
   const diff = Math.round(((actualTotal - planTotal) / planTotal) * 100);
   const verdict = diff === 0 ? 'точно за планом' : diff > 0 ? `на ${diff}% довше за план` : `на ${-diff}% швидше за план`;
   summary.textContent = `Фактично ${formatEstimate(actualTotal)} проти ${formatEstimate(planTotal)} за планом — ${verdict}.`;
-}
-
-// Найчастіше заплановані задачі й частка виконання — видно, що систематично пропускається
-function renderTaskStatsList(stats) {
-  const list = document.getElementById('task-stats-list');
-  if (!stats.length) {
-    list.innerHTML = '<p class="card-hint">За цей період задач не було.</p>';
-    return;
-  }
-  list.innerHTML = '';
-  stats
-    .sort((a, b) => b.planned - a.planned || a.done / a.planned - b.done / b.planned)
-    .slice(0, 12)
-    .forEach((s) => {
-      const share = s.done / s.planned;
-      const row = document.createElement('div');
-      row.className = 'task-stat-row';
-      row.innerHTML = `
-        <div class="task-stat-head">
-          <span class="task-stat-title">${s.task.flag ? FLAG_SVG : ''}<span></span></span>
-          <span class="task-stat-count">${s.done} з ${s.planned}</span>
-        </div>
-        <div class="task-stat-bar"><div class="task-stat-fill${share === 1 ? ' full' : share < 0.5 ? ' low' : ''}" style="width:${Math.max(3, share * 100)}%"></div></div>`;
-      row.querySelector('.task-stat-title span:last-child').textContent = s.task.title;
-      list.appendChild(row);
-    });
 }
 
 // ---------- Ранковий звіт за вчора ----------

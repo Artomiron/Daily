@@ -3235,54 +3235,6 @@ main {
   color: var(--text-dim);
 }
 
-.task-stats-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.task-stat-row {
-  padding: 10px 0;
-  border-top: 0.5px solid var(--border);
-}
-
-.task-stat-row:first-child { border-top: none; padding-top: 0; }
-
-.task-stat-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.task-stat-title {
-  min-width: 0;
-  font-size: 0.92rem;
-  word-break: break-word;
-}
-
-.task-stat-count {
-  flex: 0 0 auto;
-  font-size: 0.8rem;
-  color: var(--text-dim);
-}
-
-.task-stat-bar {
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-}
-
-.task-stat-fill {
-  height: 100%;
-  border-radius: 3px;
-  background: var(--accent);
-}
-
-.task-stat-fill.full { background: var(--accent-green); }
-.task-stat-fill.low { background: var(--danger); }
-
 /* «Не виконано» в минулих днях — заголовок і лічильник у червоних тонах */
 .section-missed { color: #f08a8a; }
 
