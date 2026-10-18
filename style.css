@@ -3621,7 +3621,19 @@ main {
   transition: stroke-dashoffset 0.35s cubic-bezier(0.3, 1.2, 0.5, 1);
 }
 
-.goal-sheet.reached .goal-big-bar { filter: drop-shadow(0 0 6px rgba(95, 211, 160, 0.7)); }
+/* Сяйво досягнутої мети — круглою тінню під кільцем: drop-shadow на SVG обрізався по квадрату полотна */
+.goal-big-ring::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  box-shadow: 0 0 22px rgba(95, 211, 160, 0.45), inset 0 0 16px rgba(95, 211, 160, 0.3);
+  opacity: 0;
+  transition: opacity 0.35s;
+  pointer-events: none;
+}
+
+.goal-sheet.reached .goal-big-ring::before { opacity: 1; }
 
 .goal-big-num {
   position: absolute;
