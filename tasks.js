@@ -491,10 +491,10 @@ function renderTasks() {
 
   const tasks = tasksForDate(currentDate);
   const doneCount = tasks.filter((t) => isTaskDone(t, currentDate)).length;
-  // Шкала до останнього порогу зірок з'являється, щойно зароблено першу зірку дня
+  // Шкала до останнього порогу зірок — щойно на день є справи, навіть якщо ще жодної не виконано
   const progress = document.getElementById('tasks-progress');
   const goal = STAR_TIERS[STAR_TIERS.length - 1];
-  progress.hidden = dayStarsOn(currentDate) < 1;
+  progress.hidden = !tasks.length;
   progress.querySelector('.tier-fill').style.width = `${(Math.min(doneCount, goal) / goal) * 100}%`;
   renderTierMarks(progress.querySelector('.tier-track'), doneCount);
   if (!starAnimating) renderStarWidget();
@@ -967,7 +967,7 @@ let starAnimating = false;
 
 const DAY_STAR_SVG = '<svg class="day-star" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z"/></svg>';
 
-// Три зірочки дня по центру; поки жодної не зароблено — не показуємо
+// Три зірочки дня по центру; у день без справ не показуємо
 function renderStarWidget() {
   const count = doneCountOn(currentDate);
   const stars = dayStarsOn(currentDate);
@@ -975,7 +975,7 @@ function renderStarWidget() {
   if (!shape.children.length) shape.innerHTML = DAY_STAR_SVG.repeat(STAR_TIERS.length);
   [...shape.children].forEach((star, i) => star.classList.toggle('on', i < stars));
   starWidget.classList.toggle('is-full', stars === STAR_TIERS.length);
-  starWidget.hidden = stars < 1;
+  starWidget.hidden = !tasksForDate(currentDate).length;
   starWidget.setAttribute('aria-label', `Зірок за день: ${stars} з ${STAR_TIERS.length}. Виконано справ: ${count}`);
 }
 
@@ -1001,8 +1001,6 @@ function pulse(el, className) {
 // Золота зірочка летить з чекбокса до зірочок дня, потім — попап з новою кількістю зірок
 function animateStarGain(fromEl, stars) {
   starAnimating = true;
-  // Перша зірка дня: зірочки з'являються, щоб було куди летіти
-  starWidget.hidden = false;
   const arrive = () => {
     renderStarWidget();
     pulse(starWidget, 'star-gain');
