@@ -1557,10 +1557,11 @@ function renderTaskStatsList(stats) {
 }
 
 // ---------- Ранковий звіт за вчора ----------
-// Показуємо раз на день при першому відкритті, якщо вчора були заплановані справи:
+// Показуємо раз на день при першому відкритті з 6 ранку, якщо вчора були заплановані справи:
 // зірки дня, скільки виконано, час у справах, план на сьогодні й перенесення незавершеного.
 
 const STORAGE_REPORT = 'daily-report-date';
+const REPORT_FROM_HOUR = 6;
 const dayReport = document.getElementById('day-report');
 let dayReportAfter = null;
 
@@ -1588,7 +1589,9 @@ function showDayReport(after) {
     shown = localStorage.getItem(STORAGE_REPORT);
   } catch {}
   const tasks = tasksForDate(yesterday);
-  if (shown === today || !tasks.length) {
+  // Уночі (до REPORT_FROM_HOUR) звіт не показуємо і не позначаємо — він дочекається ранку
+  const night = new Date().getHours() < REPORT_FROM_HOUR;
+  if (night || shown === today || !tasks.length) {
     if (after) after();
     return;
   }

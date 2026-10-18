@@ -798,6 +798,9 @@ document.addEventListener('visibilitychange', () => {
   if (lastSeenToday !== today) {
     const missed = settlePenalties();
     showDayReport(() => announcePenalties(missed));
+  } else {
+    // Відкрили вночі, а повернулись уже зранку — звіт за вчора ще не показували
+    showDayReport();
   }
   if (lastSeenToday !== today && currentDate === lastSeenToday) setDate(today);
   lastSeenToday = today;
