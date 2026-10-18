@@ -3883,3 +3883,83 @@ main {
     0 0 calc(8px + var(--share, 0) * 10px) rgba(255, 194, 51, 0.7),
     0 0 calc(var(--share, 0) * 22px) rgba(255, 61, 127, calc(var(--share, 0) * 0.85));
 }
+
+/* ---------- Налаштування: список пунктів, як в iOS ---------- */
+
+.settings-list {
+  padding: 0;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+.settings-list .sheet-row { min-height: 52px; }
+
+.settings-icon {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.settings-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.settings-intro,
+.settings-note {
+  margin: 0 4px 12px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.settings-note { margin: 10px 4px 16px; font-size: 0.8rem; }
+
+/* Пороги зірок */
+.star-tier-row { cursor: default; }
+.star-tier-row:active { background: none; }
+
+.star-tier-stars {
+  flex: 0 0 44px;
+  color: #FFC233;
+  font-size: 0.85rem;
+  letter-spacing: -1px;
+}
+
+.star-tier-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.star-tier-stepper b {
+  min-width: 34px;
+  text-align: center;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.star-tier-stepper button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #2c2c2c;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.star-tier-stepper button:disabled { opacity: 0.3; cursor: default; }
+
+.star-tiers-reset { width: 100%; }
+.star-tiers-reset:disabled { opacity: 0.4; }

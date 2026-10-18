@@ -158,7 +158,7 @@ reminderTest.addEventListener('click', async () => {
   }
 });
 
-document.getElementById('open-settings-btn').addEventListener('click', () => {
+document.querySelector('[data-open-settings="settings-reminder"]').addEventListener('click', () => {
   reminderStatus.textContent = '';
   renderReminder();
 });

@@ -1,5 +1,6 @@
 // Задачі на день: разові або з повтором (щодня, по буднях, у вибрані дні тижня, кожні N днів).
-// Зірки дня залежать від кількості виконаних справ: 4 — одна, 9 — дві, 15 — три (STAR_TIERS).
+// Зірки дня залежать від кількості виконаних справ: за замовчуванням 4 — одна, 9 — дві, 15 — три.
+// Пороги налаштовуються; starTiers: [{ since, tiers }] — історія, щоб минулі дні рахувались за тодішніми.
 // Сховище: { tasks: [{ id, title, start, repeat, until, createdAt }], done: { date: [id] },
 //            skipped: { date: [id] }, dayStars: { date: n }, penalties: { date: [id] }, settledThrough }
 // dayStars — зароблені за день зірки; лишаються, навіть якщо виконану задачу потім видалити.
@@ -47,7 +48,8 @@ const INTERVAL_MIN = 2;
 const INTERVAL_MAX = 30;
 
 // Скільки виконаних справ за день дають 1, 2 і 3 зірки
-const STAR_TIERS = [4, 9, 15];
+const DEFAULT_STAR_TIERS = [4, 9, 15];
+const STAR_COUNT = 3;
 const STAR_RULES_SINCE = '2026-10-18';
 const LEGACY_STAR_GOAL = 5;
 
@@ -94,10 +96,11 @@ function loadTasks() {
       actual: data.actual || {},
       progress: data.progress || {},
       goalUnits: data.goalUnits || [],
+      starTiers: data.starTiers || [],
       settledThrough: data.settledThrough || null,
     };
   } catch {
-    return { tasks: [], done: {}, skipped: {}, starDone: {}, dayStars: {}, penalties: {}, actual: {}, progress: {}, goalUnits: [], settledThrough: null };
+    return { tasks: [], done: {}, skipped: {}, starDone: {}, dayStars: {}, penalties: {}, actual: {}, progress: {}, goalUnits: [], starTiers: [], settledThrough: null };
   }
 }
 
@@ -115,8 +118,14 @@ function pluralTasks(n) {
   return 'справ';
 }
 
-function starsForCount(n) {
-  return STAR_TIERS.filter((min) => n >= min).length;
+// Пороги, що діяли того дня: останній запис, який почав діяти не пізніше
+function tiersOn(date) {
+  const entry = [...taskStore.starTiers].sort((a, b) => a.since.localeCompare(b.since)).filter((e) => e.since <= date).pop();
+  return entry ? entry.tiers : DEFAULT_STAR_TIERS;
+}
+
+function starsForCount(n, date) {
+  return tiersOn(date).filter((min) => n >= min).length;
 }
 
 // Скільки справ дня виконано — як у «Виконано X з Y»
@@ -127,11 +136,11 @@ function doneCountOn(date) {
 // Зірки, зароблені за день; день, у якому ще нічого не відмічали після оновлення, рахуємо наживо
 function dayStarsOn(date) {
   if (date < STAR_RULES_SINCE) return 0;
-  return taskStore.dayStars[date] ?? starsForCount(doneCountOn(date));
+  return taskStore.dayStars[date] ?? starsForCount(doneCountOn(date), date);
 }
 
 function updateDayStars(date) {
-  if (date >= STAR_RULES_SINCE) taskStore.dayStars[date] = starsForCount(doneCountOn(date));
+  if (date >= STAR_RULES_SINCE) taskStore.dayStars[date] = starsForCount(doneCountOn(date), date);
 }
 
 // Усього зароблено: зірки днів мінус штрафи, плюс зароблене за старими правилами
@@ -976,7 +985,7 @@ const DAY_STAR_SVG = '<svg class="day-star" viewBox="0 0 24 24"><path d="M12 2.6
 // Три зірочки дня по центру; у день без справ не показуємо
 // Показуємо лише зірки, яких можна досягти з поточним планом: при 10 справах — дві
 function reachableStars(date) {
-  return Math.max(dayStarsOn(date), starsForCount(tasksForDate(date).length));
+  return Math.max(dayStarsOn(date), starsForCount(tasksForDate(date).length, date));
 }
 
 function renderStarWidget() {
@@ -985,7 +994,7 @@ function renderStarWidget() {
   const reachable = reachableStars(currentDate);
   const shape = starWidget.querySelector('.star-shape');
   if (shape.children.length !== reachable) shape.innerHTML = DAY_STAR_SVG.repeat(reachable);
-  shape.classList.toggle('full-set', reachable === STAR_TIERS.length);
+  shape.classList.toggle('full-set', reachable === STAR_COUNT);
   [...shape.children].forEach((star, i) => star.classList.toggle('on', i < stars));
   starWidget.classList.toggle('is-full', reachable > 0 && stars === reachable);
   starWidget.hidden = !reachable;
@@ -995,7 +1004,7 @@ function renderStarWidget() {
 // Позначки порогів на шкалі всіх справ дня: риска й зірочки над нею; недосяжні з таким планом не малюємо
 function renderTierMarks(track, count, planned) {
   track.querySelectorAll('.tier-mark').forEach((m) => m.remove());
-  STAR_TIERS.forEach((min, i) => {
+  tiersOn(currentDate).forEach((min, i) => {
     if (min > planned) return;
     const mark = document.createElement('span');
     mark.className = 'tier-mark' + (count >= min ? ' reached' : '') + (min === planned ? ' last' : '');
@@ -1134,7 +1143,7 @@ function showStarPopup(stars) {
   document.getElementById('star-popup-title').textContent = copy.title;
   document.getElementById('star-popup-text').textContent = copy.texts[Math.floor(Math.random() * copy.texts.length)];
   const art = document.getElementById('star-popup-stars');
-  art.innerHTML = STAR_TIERS.map((_, i) => `
+  art.innerHTML = [...Array(STAR_COUNT).keys()].map((i) => `
     <svg class="popup-day-star${i < stars ? ' on' : ''}${i === stars - 1 ? ' new' : ''}" viewBox="0 0 24 24" style="--i:${i}">
       <path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z"/>
     </svg>`).join('');
@@ -1156,10 +1165,10 @@ starPopup.addEventListener('click', (e) => {
 
 starWidget.addEventListener('click', () => {
   const count = doneCountOn(currentDate);
-  const next = STAR_TIERS.find((min) => count < min);
+  const next = tiersOn(currentDate).find((min) => count < min);
   const day = currentDate === todayISO() ? 'Сьогодні' : 'Цього дня';
   if (!next) {
-    showToast(`★ ${day} зібрано всі ${STAR_TIERS.length} зірки — чудовий день!`, 2600);
+    showToast(`★ ${day} зібрано всі ${STAR_COUNT} зірки — чудовий день!`, 2600);
     return;
   }
   const left = next - count;
@@ -1653,6 +1662,7 @@ function mergeTaskStores(existing, incoming) {
       [...new Set([...Object.keys(existing.progress || {}), ...Object.keys(incoming.progress || {})])]
         .map((date) => [date, { ...(incoming.progress || {})[date], ...(existing.progress || {})[date] }]),
     ),
+    starTiers: [...(existing.starTiers || []), ...(incoming.starTiers || []).filter((e) => !(existing.starTiers || []).some((x) => x.since === e.since))],
     goalUnits: [...new Set([...(existing.goalUnits || []), ...(incoming.goalUnits || [])])].slice(0, GOAL_CUSTOM_MAX),
     settledThrough: [existing.settledThrough, incoming.settledThrough].filter(Boolean).sort().pop() || null,
   };
@@ -1924,7 +1934,7 @@ const STAR_MEDALS = ['medal-none', 'medal-bronze', 'medal-silver', 'medal-gold']
 
 // День до нових правил зірок рахуємо за кількістю справ, як у ранковому звіті
 function chartDayStars(day) {
-  return day.date < STAR_RULES_SINCE ? starsForCount(day.done) : dayStarsOn(day.date);
+  return day.date < STAR_RULES_SINCE ? starsForCount(day.done, day.date) : dayStarsOn(day.date);
 }
 
 // Очікуваний і фактичний час виконаних задач по днях — лініями, як «Стан по днях»
@@ -1998,13 +2008,13 @@ function showDayReport(after) {
 
   const done = tasks.filter((t) => isTaskDone(t, yesterday));
   // День до нових правил зірок у балансі не рахувався — у звіті все одно показуємо, скільки зірок він вартий
-  const stars = yesterday < STAR_RULES_SINCE ? starsForCount(done.length) : dayStarsOn(yesterday);
+  const stars = yesterday < STAR_RULES_SINCE ? starsForCount(done.length, yesterday) : dayStarsOn(yesterday);
   // Фактичний час, а де його не вказали — естімейт
   const minutes = done.reduce((sum, t) => sum + (taskStore.actual[yesterday]?.[t.id] || t.estimate || 0), 0);
   const copy = REPORT_COPY[stars];
 
   document.getElementById('day-report-date').textContent = `Вчора, ${formatDayMonth(yesterday)}`;
-  document.getElementById('day-report-stars').innerHTML = STAR_TIERS.map((_, i) => `
+  document.getElementById('day-report-stars').innerHTML = [...Array(STAR_COUNT).keys()].map((i) => `
     <svg class="popup-day-star${i < stars ? ' on' : ''}" viewBox="0 0 24 24" style="--i:${i}">
       <path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z"/>
     </svg>`).join('');
@@ -2050,3 +2060,60 @@ dayReport.addEventListener('click', (e) => {
   if (e.target === dayReport) closeDayReport();
 });
 attachSheetDrag(dayReport, closeDayReport);
+
+// ---------- Налаштування: пороги зірок ----------
+// Змінені пороги починають діяти з завтра: сьогоднішні зірки й шкала посеред дня не змінюються.
+
+const STAR_TIER_MAX = 99;
+
+function setTomorrowTiers(tiers) {
+  const tomorrow = shiftDate(todayISO(), 1);
+  taskStore.starTiers = taskStore.starTiers.filter((e) => e.since < tomorrow);
+  const today = tiersOn(todayISO());
+  if (tiers.some((t, i) => t !== today[i])) taskStore.starTiers.push({ since: tomorrow, tiers: [...tiers] });
+  saveTasks();
+}
+
+function renderStarTierSettings() {
+  const tiers = [...tiersOn(shiftDate(todayISO(), 1))];
+  const box = document.getElementById('star-tiers');
+  box.innerHTML = '';
+  tiers.forEach((value, i) => {
+    const min = i === 0 ? 1 : tiers[i - 1] + 1;
+    const max = i === tiers.length - 1 ? STAR_TIER_MAX : tiers[i + 1] - 1;
+    const row = document.createElement('div');
+    row.className = 'sheet-row star-tier-row';
+    row.innerHTML = `
+      <span class="star-tier-stars" aria-hidden="true">${'★'.repeat(i + 1)}</span>
+      <span class="sheet-row-title">${i + 1}-а зірка</span>
+      <span class="star-tier-stepper">
+        <button type="button" aria-label="Менше справ">−</button>
+        <b>${value}</b>
+        <button type="button" aria-label="Більше справ">+</button>
+      </span>`;
+    const [minus, plus] = row.querySelectorAll('button');
+    minus.disabled = value <= min;
+    plus.disabled = value >= max;
+    const change = (delta) => {
+      tiers[i] = value + delta;
+      setTomorrowTiers(tiers);
+      renderStarTierSettings();
+    };
+    minus.addEventListener('click', () => change(-1));
+    plus.addEventListener('click', () => change(1));
+    row.querySelector('.star-tier-stepper').setAttribute('aria-label', `${i + 1}-а зірка: ${value} ${pluralTasks(value)}`);
+    box.appendChild(row);
+  });
+
+  const today = tiersOn(todayISO());
+  const changed = tiers.some((t, i) => t !== today[i]);
+  document.getElementById('star-tiers-note').textContent = changed
+    ? `Нові пороги діятимуть з завтра, ${formatDayMonth(shiftDate(todayISO(), 1))}. Сьогодні ще діють ${today.join(' · ')}.`
+    : 'Зміни почнуть діяти з наступного дня — сьогоднішні зірки не зміняться.';
+  document.getElementById('star-tiers-reset').disabled = DEFAULT_STAR_TIERS.every((t, i) => t === tiers[i]);
+}
+
+document.getElementById('star-tiers-reset').addEventListener('click', () => {
+  setTomorrowTiers(DEFAULT_STAR_TIERS);
+  renderStarTierSettings();
+});

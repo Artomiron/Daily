@@ -122,6 +122,8 @@ function switchTab(tab) {
 document.querySelectorAll('[data-close-modal]').forEach((btn) => {
   btn.addEventListener('click', () => {
     document.getElementById(btn.dataset.closeModal).hidden = true;
+    // Повернулись з пункту налаштувань — оновлюємо значення в списку
+    if (!document.getElementById('settings-modal').hidden) renderSettingsList();
   });
 });
 
@@ -637,9 +639,27 @@ window.addEventListener('resize', () => {
 
 const backupStatus = document.getElementById('backup-status');
 
+// Налаштування — список пунктів, як в iOS; кожен відкривається окремим екраном поверх списку
+function renderSettingsList() {
+  const reminder = loadReminder();
+  document.getElementById('settings-reminder-value').textContent = reminder.enabled ? reminder.time : 'Вимкнено';
+  document.getElementById('settings-stars-value').textContent = tiersOn(shiftDate(todayISO(), 1)).join(' · ');
+}
+
 document.getElementById('open-settings-btn').addEventListener('click', () => {
-  backupStatus.textContent = `Записів: ${Object.keys(entries).length}`;
+  renderSettingsList();
   document.getElementById('settings-modal').hidden = false;
+});
+
+document.querySelectorAll('[data-open-settings]').forEach((row) => {
+  row.addEventListener('click', () => {
+    const id = row.dataset.openSettings;
+    if (id === 'settings-backup') backupStatus.textContent = `Записів: ${Object.keys(entries).length}`;
+    if (id === 'settings-stars') renderStarTierSettings();
+    const screen = document.getElementById(id);
+    screen.hidden = false;
+    screen.scrollTop = 0;
+  });
 });
 
 document.getElementById('export-btn').addEventListener('click', async () => {

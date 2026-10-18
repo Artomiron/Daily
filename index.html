@@ -460,8 +460,40 @@
       <button type="button" class="app-modal-back" data-close-modal="settings-modal"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Назад</button>
       <h2 class="app-modal-title">Налаштування</h2>
     </div>
+    <div class="sheet-group sheet-rows settings-list">
+      <button type="button" class="sheet-row" data-open-settings="settings-reminder">
+        <span class="settings-icon" style="background:#ff9f0a" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg></span>
+        <span class="sheet-row-title">Нагадування</span>
+        <span id="settings-reminder-value" class="sheet-row-value"></span>
+        <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <button type="button" class="sheet-row" data-open-settings="settings-stars">
+        <span class="settings-icon" style="background:#FFB627" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></span>
+        <span class="sheet-row-title">Зірки дня</span>
+        <span id="settings-stars-value" class="sheet-row-value"></span>
+        <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <button type="button" class="sheet-row" data-open-settings="settings-backup">
+        <span class="settings-icon" style="background:#30b0c7" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></span>
+        <span class="sheet-row-title">Резервна копія</span>
+        <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <button type="button" class="sheet-row" data-open-settings="settings-install">
+        <span class="settings-icon" style="background:#5e5ce6" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg></span>
+        <span class="sheet-row-title">Додати на екран iPhone</span>
+        <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<section id="settings-reminder" class="app-modal" hidden>
+  <div class="app-modal-inner">
+    <div class="app-modal-header">
+      <button type="button" class="app-modal-back" data-close-modal="settings-reminder"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Налаштування</button>
+      <h2 class="app-modal-title">Нагадування</h2>
+    </div>
     <div class="card" id="reminder-card">
-      <h2 class="card-title">Нагадування</h2>
       <p id="reminder-hint" class="card-hint">Щодня нагадаю оцінити день.</p>
       <div class="settings-row">
         <label for="reminder-toggle">Щоденне нагадування</label>
@@ -474,8 +506,29 @@
       <button type="button" id="reminder-test" class="secondary-btn reminder-test" hidden>Надіслати тестове</button>
       <p id="reminder-status" class="card-hint reminder-status"></p>
     </div>
+  </div>
+</section>
+
+<section id="settings-stars" class="app-modal" hidden>
+  <div class="app-modal-inner">
+    <div class="app-modal-header">
+      <button type="button" class="app-modal-back" data-close-modal="settings-stars"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Налаштування</button>
+      <h2 class="app-modal-title">Зірки дня</h2>
+    </div>
+    <p class="settings-intro">Скільки справ треба виконати за день, щоб отримати кожну зірку.</p>
+    <div id="star-tiers" class="sheet-group sheet-rows settings-list"></div>
+    <p id="star-tiers-note" class="settings-note"></p>
+    <button type="button" id="star-tiers-reset" class="secondary-btn star-tiers-reset">Скинути до стандартних (4 · 9 · 15)</button>
+  </div>
+</section>
+
+<section id="settings-backup" class="app-modal" hidden>
+  <div class="app-modal-inner">
+    <div class="app-modal-header">
+      <button type="button" class="app-modal-back" data-close-modal="settings-backup"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Налаштування</button>
+      <h2 class="app-modal-title">Резервна копія</h2>
+    </div>
     <div class="card">
-      <h2 class="card-title">Резервна копія</h2>
       <p class="card-hint">Записи зберігаються лише на цьому пристрої, в браузері. Нікуди не надсилаються. Час від часу експортуйте копію, щоб не втратити записи.</p>
       <div class="settings-actions">
         <button type="button" id="export-btn" class="primary-btn">📤 Експортувати</button>
@@ -484,8 +537,16 @@
       </div>
       <p id="backup-status" class="card-hint"></p>
     </div>
+  </div>
+</section>
+
+<section id="settings-install" class="app-modal" hidden>
+  <div class="app-modal-inner">
+    <div class="app-modal-header">
+      <button type="button" class="app-modal-back" data-close-modal="settings-install"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Налаштування</button>
+      <h2 class="app-modal-title">Додати на екран iPhone</h2>
+    </div>
     <div class="card">
-      <h2 class="card-title">Додати на екран iPhone</h2>
       <p class="card-hint">У Safari натисніть «Поділитися» → «На початковий екран». Daily відкриватиметься як окремий застосунок зі своєю іконкою.</p>
     </div>
   </div>
