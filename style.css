@@ -761,7 +761,8 @@ main {
 .dot-physical { background: var(--accent-green); }
 .dot-energy { background: var(--accent-warm); }
 
-#stats-chart {
+#stats-chart,
+#time-stats-chart {
   width: 100%;
   display: block;
 }
@@ -3350,7 +3351,7 @@ main {
 
 .completion-chart { padding-top: 18px; }
 
-.time-chart[hidden] { display: none; }
+#time-stats-chart[hidden] { display: none; }
 
 .time-pair { gap: 2px; }
 

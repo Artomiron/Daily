@@ -171,6 +171,72 @@ function createWeekPicker(root, { statusFor, extra } = {}) {
   return { render };
 }
 
+// ---------- Лінійний графік по днях ----------
+// Спільний для «Стан по днях» і «План і факт»: сітка, підписи дат і лінії з точками.
+//   series: [{ color, valueAt(date) → частка 0…1 або null, якщо значення немає }]
+
+function drawLineChart(canvas, dates, series, height = 220) {
+  const styles = getComputedStyle(document.documentElement);
+  const grid = styles.getPropertyValue('--border').trim();
+  const text = styles.getPropertyValue('--text-dim').trim();
+
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, width, height);
+
+  const pad = { left: 18, right: 18, top: 10, bottom: 24 };
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+  const x = (i) => pad.left + (dates.length === 1 ? plotW / 2 : (i / (dates.length - 1)) * plotW);
+  const y = (share) => pad.top + plotH - share * plotH;
+
+  ctx.font = '11px -apple-system, sans-serif';
+  ctx.fillStyle = text;
+  ctx.strokeStyle = grid;
+  ctx.lineWidth = 1;
+  for (let share = 0; share <= 1; share += 0.25) {
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y(share));
+    ctx.lineTo(width - pad.right, y(share));
+    ctx.stroke();
+  }
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const labelEvery = Math.ceil(dates.length / 7);
+  dates.forEach((d, i) => {
+    if ((dates.length - 1 - i) % labelEvery !== 0) return;
+    const date = fromISODate(d);
+    ctx.fillText(`${date.getDate()}.${String(date.getMonth() + 1).padStart(2, '0')}`, x(i), height - pad.bottom + 8);
+  });
+
+  series.forEach(({ color, valueAt }) => {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    let prev = null;
+    dates.forEach((d, i) => {
+      const v = valueAt(d);
+      if (v == null) return;
+      if (prev) {
+        ctx.beginPath();
+        ctx.moveTo(x(prev.i), y(prev.v));
+        ctx.lineTo(x(i), y(v));
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(x(i), y(v), dates.length > 31 ? 2 : 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      prev = { i, v };
+    });
+  });
+}
+
 // ---------- Клавіатура і шторки ----------
 // На iOS і в Android Chrome клавіатура не зменшує сторінку, а лише ховає її низ, тож прикріплена
 // до низу шторка опиняється під клавіатурою. Стежимо за видимою областю (visualViewport) і передаємо

@@ -1731,6 +1731,8 @@ attachSheetDrag(timeDialog, () => closeTimeDialog(false));
 function renderTaskStats(dates) {
   let planned = 0;
   let done = 0;
+  let pastPlanned = 0;
+  let pastDone = 0;
   let doneMinutes = 0;
   let daysWithTasks = 0;
   let starsEarnedInRange = 0;
@@ -1743,6 +1745,11 @@ function renderTaskStats(dates) {
     const dayDone = tasks.filter((t) => isTaskDone(t, date));
     planned += tasks.length;
     done += dayDone.length;
+    // Відсоток — лише за днями, що вже минули: сьогоднішні справи ще можна встигнути
+    if (date < todayISO()) {
+      pastPlanned += tasks.length;
+      pastDone += dayDone.length;
+    }
     doneMinutes += dayDone.reduce((sum, t) => sum + (t.estimate || 0), 0);
     if (tasks.length) daysWithTasks++;
     starsEarnedInRange += dayStarsOn(date);
@@ -1764,7 +1771,7 @@ function renderTaskStats(dates) {
     });
   });
 
-  const rate = planned ? Math.round((done / planned) * 100) : null;
+  const rate = pastPlanned ? Math.round((pastDone / pastPlanned) * 100) : null;
   const tiles = [
     { value: rate == null ? '—' : `${rate}%`, label: 'Виконано' },
     { value: `${done}<span class="stat-max">/${planned}</span>`, label: 'Задач виконано' },
@@ -1809,35 +1816,26 @@ function renderCompletionChart(perDay) {
   });
 }
 
-// Очікуваний і фактичний час виконаних задач по днях, парними стовпчиками
+// Очікуваний і фактичний час виконаних задач по днях — лініями, як «Стан по днях»
 function renderTimeChart(perDay) {
-  const chart = document.getElementById('time-stats-chart');
+  const canvas = document.getElementById('time-stats-chart');
   const summary = document.getElementById('time-stats-summary');
   const planTotal = perDay.reduce((sum, d) => sum + d.planMinutes, 0);
   const actualTotal = perDay.reduce((sum, d) => sum + d.actualMinutes, 0);
-  chart.innerHTML = '';
-  chart.hidden = !actualTotal;
+  canvas.hidden = !actualTotal;
   if (!actualTotal) {
     summary.textContent = 'Вказуйте фактичний час після виконання задач — тут з\'явиться порівняння з планом.';
     return;
   }
-  chart.classList.toggle('dense', perDay.length > 31);
+  // Спільна шкала для обох ліній: від нуля до найдовшого дня
   const max = Math.max(...perDay.map((d) => Math.max(d.planMinutes, d.actualMinutes)));
-  perDay.forEach((day, i) => {
-    const col = document.createElement('div');
-    col.className = 'completion-col';
-    col.title = day.actualMinutes
-      ? `${capitalize(formatDate(day.date, 'short'))}: план ${formatEstimate(day.planMinutes)}, факт ${formatEstimate(day.actualMinutes)}`
-      : capitalize(formatDate(day.date, 'short'));
-    const h = (m) => (m ? Math.max(3, (m / max) * 100) : 0);
-    col.innerHTML = `
-      <div class="completion-track time-pair">
-        <div class="time-bar plan" style="height:${h(day.planMinutes)}%"></div>
-        <div class="time-bar actual" style="height:${h(day.actualMinutes)}%"></div>
-      </div>
-      <span class="completion-label">${chartLabel(perDay, i)}</span>`;
-    chart.appendChild(col);
-  });
+  const byDate = new Map(perDay.map((d) => [d.date, d]));
+  const styles = getComputedStyle(document.documentElement);
+  const share = (minutes) => (minutes ? minutes / max : null);
+  drawLineChart(canvas, perDay.map((d) => d.date), [
+    { color: styles.getPropertyValue('--accent').trim(), valueAt: (date) => share(byDate.get(date).planMinutes) },
+    { color: styles.getPropertyValue('--accent-warm').trim(), valueAt: (date) => share(byDate.get(date).actualMinutes) },
+  ], 200);
   const diff = Math.round(((actualTotal - planTotal) / planTotal) * 100);
   const verdict = diff === 0 ? 'точно за планом' : diff > 0 ? `на ${diff}% довше за план` : `на ${-diff}% швидше за план`;
   summary.textContent = `Фактично ${formatEstimate(actualTotal)} проти ${formatEstimate(planTotal)} за планом — ${verdict}.`;

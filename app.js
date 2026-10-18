@@ -573,8 +573,9 @@ function setStatsView(view) {
   try {
     localStorage.setItem(STORAGE_STATS_VIEW, view);
   } catch {}
-  // Полотно графіка щоденника малюється за розміром, тож перемальовуємо, коли воно знову видиме
+  // Полотна графіків малюються за розміром, тож перемальовуємо, коли вони знову видимі
   if (view === 'diary') drawChart(periodDates(statsDays));
+  if (view === 'tasks') renderTaskStats(periodDates(statsDays));
 }
 
 document.querySelectorAll('#stats-switch .segment').forEach((btn) => {
@@ -616,78 +617,20 @@ function renderFactorStats(periodEntries) {
 }
 
 function drawChart(dates) {
-  const canvas = document.getElementById('stats-chart');
   const styles = getComputedStyle(document.documentElement);
-  const colors = {
-    grid: styles.getPropertyValue('--border').trim(),
-    text: styles.getPropertyValue('--text-dim').trim(),
-  };
-
-  const dpr = window.devicePixelRatio || 1;
-  const width = canvas.clientWidth;
-  const height = 220;
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, width, height);
-
-  const pad = { left: 18, right: 18, top: 10, bottom: 24 };
-  const plotW = width - pad.left - pad.right;
-  const plotH = height - pad.top - pad.bottom;
-  const x = (i) => pad.left + (dates.length === 1 ? plotW / 2 : (i / (dates.length - 1)) * plotW);
+  const color = (name) => styles.getPropertyValue(name).trim();
   // Шкали різні, тому малюємо частку від найгіршого до найкращого
-  const y = (share) => pad.top + plotH - share * plotH;
-
-  ctx.font = '11px -apple-system, sans-serif';
-  ctx.fillStyle = colors.text;
-  ctx.strokeStyle = colors.grid;
-  ctx.lineWidth = 1;
-  for (let share = 0; share <= 1; share += 0.25) {
-    ctx.beginPath();
-    ctx.moveTo(pad.left, y(share));
-    ctx.lineTo(width - pad.right, y(share));
-    ctx.stroke();
-  }
-
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  const labelEvery = Math.ceil(dates.length / 7);
-  dates.forEach((d, i) => {
-    if ((dates.length - 1 - i) % labelEvery !== 0) return;
-    const date = fromISODate(d);
-    ctx.fillText(`${date.getDate()}.${String(date.getMonth() + 1).padStart(2, '0')}`, x(i), height - pad.bottom + 8);
-  });
-
-  const drawSeries = (color, shareAt) => {
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    let prev = null;
-    dates.forEach((d, i) => {
-      const v = shareAt(entries[d]);
-      if (v == null) return;
-      if (prev) {
-        ctx.beginPath();
-        ctx.moveTo(x(prev.i), y(prev.v));
-        ctx.lineTo(x(i), y(v));
-        ctx.stroke();
-      }
-      ctx.beginPath();
-      ctx.arc(x(i), y(v), dates.length > 31 ? 2 : 3.5, 0, Math.PI * 2);
-      ctx.fill();
-      prev = { i, v };
-    });
-  };
-
-  drawSeries(styles.getPropertyValue('--accent-green').trim(), (entry) => (isBodyFilled(entry?.body) ? bodyIndex(entry.body) / 100 : null));
-  drawSeries(styles.getPropertyValue('--accent-warm').trim(), (entry) => stateShare(entry, 'a'));
-  drawSeries(styles.getPropertyValue('--accent').trim(), (entry) => stateShare(entry, 'v'));
+  drawLineChart(document.getElementById('stats-chart'), dates, [
+    { color: color('--accent-green'), valueAt: (d) => (isBodyFilled(entries[d]?.body) ? bodyIndex(entries[d].body) / 100 : null) },
+    { color: color('--accent-warm'), valueAt: (d) => stateShare(entries[d], 'a') },
+    { color: color('--accent'), valueAt: (d) => stateShare(entries[d], 'v') },
+  ]);
 }
 
 window.addEventListener('resize', () => {
-  if (document.getElementById('tab-stats').classList.contains('active')) drawChart(periodDates(statsDays));
+  if (!document.getElementById('tab-stats').classList.contains('active')) return;
+  drawChart(periodDates(statsDays));
+  renderTaskStats(periodDates(statsDays));
 });
 
 // ---------- Резервна копія ----------
