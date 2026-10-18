@@ -338,6 +338,31 @@
   </div>
 </section>
 
+<section id="goal-sheet" class="sheet goal-sheet" hidden>
+  <div class="sheet-panel" role="dialog" aria-labelledby="goal-sheet-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="sheet-nav time-dialog-nav">
+      <h2 id="goal-sheet-title" class="sheet-nav-title">Скільки зроблено?</h2>
+    </div>
+    <p id="goal-sheet-task" class="time-dialog-plan goal-sheet-task"></p>
+    <div class="goal-big-ring" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <circle class="goal-big-track" cx="50" cy="50" r="42"/>
+        <circle id="goal-sheet-bar" class="goal-big-bar" cx="50" cy="50" r="42" stroke-dasharray="263.89" stroke-dashoffset="263.89"/>
+      </svg>
+      <div class="goal-big-num"><b id="goal-sheet-value">0</b><span id="goal-sheet-unit"></span></div>
+    </div>
+    <div class="goal-stepper">
+      <button type="button" id="goal-sheet-minus" aria-label="Мінус один">−</button>
+      <input type="number" id="goal-sheet-input" inputmode="numeric" min="0" max="9999" aria-label="Скільки зроблено">
+      <button type="button" id="goal-sheet-plus" aria-label="Плюс один">+</button>
+    </div>
+    <div id="goal-sheet-quick" class="goal-quick"></div>
+    <button type="button" id="goal-sheet-save" class="primary-btn time-dialog-save">Зберегти</button>
+    <button type="button" id="goal-sheet-all" class="goal-sheet-all">✓ Усе виконано</button>
+  </div>
+</section>
+
 <section id="time-dialog" class="sheet time-dialog" hidden>
   <div class="sheet-panel" role="dialog" aria-labelledby="time-dialog-title">
     <div class="sheet-handle" aria-hidden="true"></div>
@@ -386,6 +411,20 @@
         <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </button>
       <div id="task-sheet-estimate" class="repeat-list estimate-picker" hidden></div>
+      <button type="button" id="task-sheet-goal-row" class="sheet-row" aria-expanded="false">
+        <svg class="sheet-row-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.9"/></svg>
+        <span class="sheet-row-title">Мета</span>
+        <span id="task-sheet-goal-label" class="sheet-row-value goal-label"></span>
+        <svg class="sheet-row-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <div id="task-sheet-goal" class="goal-editor" hidden>
+        <div class="goal-editor-line">
+          <input type="number" id="task-sheet-goal-target" class="goal-target" inputmode="numeric" min="1" max="9999" placeholder="0" aria-label="Мета: скільки за день">
+          <span class="goal-editor-hint">скільки разом за день</span>
+        </div>
+        <div id="task-sheet-goal-units" class="goal-units"></div>
+        <p class="goal-editor-foot">Порожнє число — без мети. Свою одиницю можна видалити довгим тапом.</p>
+      </div>
       <label class="sheet-row">
         <svg class="sheet-row-icon flag-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2.5" width="2.2" height="19" rx="1.1"/><path d="M6.2 3.5h12.3c.5 0 .8.6.5 1l-2.6 3.8 2.6 3.8c.3.4 0 1-.5 1H6.2z"/></svg>
         <span class="sheet-row-title">Високий пріоритет</span>

@@ -8,6 +8,9 @@
 // settledThrough — останній уже підбитий день.
 // До STAR_RULES_SINCE діяли старі правила: зіркові задачі (starDone), 5 штук — зірка, штраф 1/5.
 // actual: { date: { id: хвилини } } — фактично затрачений час, який вказали після виконання.
+// Задача може мати числову мету goal: { target, unit } («100 раз», «40 хв»): progress: { date: { id: n } }
+// зберігає, скільки вже зроблено за день; досягнута мета робить задачу виконаною.
+// goalUnits — свої одиниці мети, яких немає серед стандартних.
 
 const STORAGE_TASKS = 'daily-tasks';
 
@@ -89,10 +92,12 @@ function loadTasks() {
       dayStars: data.dayStars || {},
       penalties: data.penalties || {},
       actual: data.actual || {},
+      progress: data.progress || {},
+      goalUnits: data.goalUnits || [],
       settledThrough: data.settledThrough || null,
     };
   } catch {
-    return { tasks: [], done: {}, skipped: {}, starDone: {}, dayStars: {}, penalties: {}, actual: {}, settledThrough: null };
+    return { tasks: [], done: {}, skipped: {}, starDone: {}, dayStars: {}, penalties: {}, actual: {}, progress: {}, goalUnits: [], settledThrough: null };
   }
 }
 
@@ -139,6 +144,38 @@ function starsEarned() {
     .filter(([d]) => d >= STAR_RULES_SINCE)
     .reduce((sum, [, ids]) => sum + ids.length, 0);
   return legacy + earned - penalties;
+}
+
+// ---------- Числова мета задачі ----------
+
+const GOAL_UNITS = ['раз', 'хв', 'вправ'];
+const GOAL_CUSTOM_MAX = 6;
+const GOAL_MAX = 9999;
+
+function goalProgress(task, date) {
+  return taskStore.progress[date]?.[task.id] || 0;
+}
+
+function setGoalProgress(task, date, value) {
+  if (value > 0) {
+    taskStore.progress[date] = { ...taskStore.progress[date], [task.id]: value };
+  } else if (taskStore.progress[date]) {
+    delete taskStore.progress[date][task.id];
+    if (!Object.keys(taskStore.progress[date]).length) delete taskStore.progress[date];
+  }
+}
+
+function formatGoal(goal) {
+  return `${goal.target}\u00a0${goal.unit}`;
+}
+
+// Швидкі кнопки «+N» під розмір мети: для 3 вправ — лише +1, для 100 присідань — +5…+50
+function goalSteps(target) {
+  if (target <= 5) return [1];
+  if (target <= 20) return [1, 2, 5];
+  if (target <= 60) return [5, 10, 15, 20];
+  if (target <= 200) return [5, 10, 25, 50];
+  return [10, 50, 100, 250];
 }
 
 // ---------- Штрафи за пропущені пріоритетні задачі ----------
@@ -489,8 +526,15 @@ function renderTaskRow(task) {
   // День минув, а задачу не виконано — червоний хрестик замість порожнього кружечка
   const missed = !done && currentDate < todayISO();
   row.className = 'task' + (done ? ' done' : '') + (missed ? ' missed' : '');
+  // Задача з метою: кружечок — кільце прогресу; почата, але не завершена в минулому — помаранчеве кільце
+  const progress = task.goal ? goalProgress(task, currentDate) : 0;
+  const partial = missed && progress > 0;
+  if (partial) row.classList.add('partial');
+  const circle = task.goal && !done && (!missed || partial)
+    ? `<span class="check-circle goal-ring">${goalRingSvg(progress / task.goal.target)}${CHECK_SVG}</span>`
+    : `<span class="check-circle">${missed ? CROSS_SVG : CHECK_SVG}</span>`;
   row.innerHTML = `
-    <button type="button" class="task-check" role="checkbox" aria-checked="${done}"><span class="check-circle">${missed ? CROSS_SVG : CHECK_SVG}</span></button>
+    <button type="button" class="task-check" role="checkbox" aria-checked="${done}">${circle}</button>
     <button type="button" class="task-body">
       <span class="task-title">${task.flag ? FLAG_SVG : ''}<span></span></span>
       <span class="task-meta"></span>
@@ -498,6 +542,14 @@ function renderTaskRow(task) {
   row.querySelector('.task-title span').textContent = task.title;
   const meta = repeatLabel(task.repeat);
   const metaEl = row.querySelector('.task-meta');
+  if (task.goal) {
+    const part = document.createElement('span');
+    part.className = 'meta-part goal-count' + (progress || done ? '' : ' empty');
+    const value = done ? Math.max(progress, task.goal.target) : progress;
+    part.textContent = `${value}/${formatGoal(task.goal)}`;
+    if (partial) part.append(` · ${Math.round((progress / task.goal.target) * 100)}%`);
+    metaEl.appendChild(part);
+  }
   if (task.estimate) {
     const part = document.createElement('span');
     part.className = 'meta-part';
@@ -539,11 +591,110 @@ function renderTaskRow(task) {
   row.querySelector('.task-check').setAttribute('aria-label', done
     ? `Позначити «${task.title}» невиконаною`
     : missed ? `«${task.title}» не виконано. Позначити виконаною` : `Позначити «${task.title}» виконаною`);
-  row.querySelector('.task-check').addEventListener('click', (e) => toggleTask(task, row, e.currentTarget));
+  row.querySelector('.task-check').addEventListener('click', (e) => {
+    if (task.goal) openGoalSheet(task, row, e.currentTarget);
+    else toggleTask(task, row, e.currentTarget);
+  });
   row.querySelector('.task-body').addEventListener('click', () => openTaskSheet(task));
   if (missed && canMoveToNextDay(task, currentDate)) row.appendChild(renderMoveButton(task));
   return attachTaskSwipe(row, task, done);
 }
+
+const GOAL_RING_R = 12;
+const GOAL_RING_LEN = 2 * Math.PI * GOAL_RING_R;
+
+function goalRingSvg(share) {
+  const offset = GOAL_RING_LEN * (1 - Math.min(1, share));
+  return `<svg class="goal-ring-svg" viewBox="0 0 28 28" aria-hidden="true">
+    <circle class="goal-ring-track" cx="14" cy="14" r="${GOAL_RING_R}"/>
+    ${share > 0 ? `<circle class="goal-ring-bar" cx="14" cy="14" r="${GOAL_RING_R}" stroke-dasharray="${GOAL_RING_LEN}" stroke-dashoffset="${offset}"/>` : ''}
+  </svg>`;
+}
+
+// ---------- Шторка «Скільки зроблено?» ----------
+
+const goalSheet = document.getElementById('goal-sheet');
+const goalInput = document.getElementById('goal-sheet-input');
+const GOAL_BIG_LEN = 2 * Math.PI * 42;
+let goalSheetState = null;
+
+function openGoalSheet(task, row, checkEl) {
+  goalSheetState = { task, row, checkEl, date: currentDate };
+  const { target, unit } = task.goal;
+  document.getElementById('goal-sheet-task').textContent = `${task.title} · мета ${formatGoal(task.goal)}`;
+  document.getElementById('goal-sheet-unit').textContent = `з ${target}\u00a0${unit}`;
+  const quick = document.getElementById('goal-sheet-quick');
+  quick.innerHTML = '';
+  goalSteps(target).forEach((step) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = `+${step}`;
+    btn.addEventListener('click', () => setGoalSheetValue(goalSheetValue() + step));
+    quick.appendChild(btn);
+  });
+  quick.style.gridTemplateColumns = `repeat(${quick.children.length}, 1fr)`;
+  const done = isTaskDone(task, currentDate);
+  document.getElementById('goal-sheet-all').hidden = done;
+  setGoalSheetValue(done ? Math.max(goalProgress(task, currentDate), target) : goalProgress(task, currentDate));
+  goalSheet.hidden = false;
+}
+
+function goalSheetValue() {
+  return Math.max(0, Math.min(GOAL_MAX, parseInt(goalInput.value, 10) || 0));
+}
+
+function setGoalSheetValue(value) {
+  value = Math.max(0, Math.min(GOAL_MAX, value));
+  goalInput.value = value;
+  renderGoalSheet();
+}
+
+function renderGoalSheet() {
+  const value = goalSheetValue();
+  const { target } = goalSheetState.task.goal;
+  document.getElementById('goal-sheet-value').textContent = value;
+  const bar = document.getElementById('goal-sheet-bar');
+  bar.style.strokeDashoffset = GOAL_BIG_LEN * (1 - Math.min(1, value / target));
+  goalSheet.classList.toggle('reached', value >= target);
+}
+
+function closeGoalSheet() {
+  goalSheet.hidden = true;
+  goalInput.blur();
+}
+
+// Зберегли прогрес: досягли мети — задача виконана (з усіма святкуваннями), опустились нижче — відмітка знімається
+function applyGoalProgress(value) {
+  const { task, row, checkEl, date } = goalSheetState;
+  closeGoalSheet();
+  const done = isTaskDone(task, date);
+  setGoalProgress(task, date, value);
+  saveTasks();
+  if (value >= task.goal.target && !done) toggleTask(task, row, checkEl);
+  else if (value < task.goal.target && done) toggleTask(task, row, checkEl);
+  else {
+    flashSaved();
+    renderTasks();
+  }
+}
+
+goalInput.addEventListener('input', renderGoalSheet);
+goalInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    applyGoalProgress(goalSheetValue());
+  }
+});
+document.getElementById('goal-sheet-minus').addEventListener('click', () => setGoalSheetValue(goalSheetValue() - 1));
+document.getElementById('goal-sheet-plus').addEventListener('click', () => setGoalSheetValue(goalSheetValue() + 1));
+document.getElementById('goal-sheet-save').addEventListener('click', () => applyGoalProgress(goalSheetValue()));
+document.getElementById('goal-sheet-all').addEventListener('click', () => {
+  applyGoalProgress(Math.max(goalSheetValue(), goalSheetState.task.goal.target));
+});
+goalSheet.addEventListener('click', (e) => {
+  if (e.target === goalSheet) closeGoalSheet();
+});
+attachSheetDrag(goalSheet, closeGoalSheet);
 
 // ---------- Свайпи по задачі ----------
 // Вправо — виконати (або повернути), вліво — видалити, як у системних списках iOS.
@@ -665,6 +816,11 @@ function toggleTask(task, row, checkEl) {
   taskStore.done[date] = [...done];
   if (!taskStore.done[date].length) delete taskStore.done[date];
 
+  // Мета: виконана задача — мета досягнута; знята відмітка з повністю «набраної» задачі обнуляє прогрес
+  const prevProgress = task.goal ? goalProgress(task, date) : 0;
+  if (task.goal && nowDone && prevProgress < task.goal.target) setGoalProgress(task, date, task.goal.target);
+  if (task.goal && !nowDone && prevProgress >= task.goal.target) setGoalProgress(task, date, 0);
+
   // Зірки дня: перераховуємо за кількістю виконаного, знята відмітка може забрати зірку
   updateDayStars(date);
   syncPenalty(task, date);
@@ -681,6 +837,8 @@ function toggleTask(task, row, checkEl) {
       const store = JSON.parse(restored);
       store.done[date] = [...new Set([...(store.done[date] || []), task.id])];
       taskStore = store;
+      // Відмітку повернули — мета знову досягнута
+      if (task.goal) setGoalProgress(task, date, Math.max(prevProgress, task.goal.target));
       updateDayStars(date);
       if (prevActual) setActual(task, date, prevActual);
       syncPenalty(task, date);
@@ -1023,6 +1181,9 @@ function openTaskSheet(task) {
   sheetDate = task ? task.start : currentDate;
   sheetFlag.checked = Boolean(task?.flag);
   sheetEstimate = task?.estimate || ESTIMATE_DEFAULT;
+  sheetGoal = task?.goal ? { ...task.goal } : { target: null, unit: GOAL_UNITS[0] };
+  setGoalEditorOpen(false);
+  renderSheetGoal();
   setEstimateOpen(false);
   renderSheetEstimate();
   updateSheetSave();
@@ -1091,6 +1252,143 @@ const estimatePicker = createDurationPicker(sheetEstimatePicker, (minutes) => {
 
 function renderSheetEstimate() {
   document.getElementById('task-sheet-estimate-label').textContent = formatEstimate(sheetEstimate);
+}
+
+// ---------- Мета в шторці задачі ----------
+
+const sheetGoalRow = document.getElementById('task-sheet-goal-row');
+const sheetGoalEditor = document.getElementById('task-sheet-goal');
+const sheetGoalTarget = document.getElementById('task-sheet-goal-target');
+let sheetGoal = { target: null, unit: GOAL_UNITS[0] };
+
+function setGoalEditorOpen(open) {
+  sheetGoalEditor.hidden = !open;
+  sheetGoalRow.classList.toggle('open', open);
+  sheetGoalRow.setAttribute('aria-expanded', open);
+  if (open && !sheetGoal.target) sheetGoalTarget.focus();
+}
+
+sheetGoalRow.addEventListener('click', () => setGoalEditorOpen(sheetGoalEditor.hidden));
+
+function renderSheetGoal() {
+  sheetGoalTarget.value = sheetGoal.target || '';
+  renderSheetGoalLabel();
+  renderGoalUnits();
+}
+
+function renderSheetGoalLabel() {
+  const label = document.getElementById('task-sheet-goal-label');
+  label.textContent = sheetGoal.target ? formatGoal(sheetGoal) : 'Немає';
+  label.classList.toggle('on', Boolean(sheetGoal.target));
+}
+
+// Мета в хвилинах — це й тривалість задачі
+function syncEstimateWithGoal() {
+  if (sheetGoal.unit !== 'хв' || !sheetGoal.target) return;
+  sheetEstimate = Math.min(ESTIMATE_MAX_HOURS * 60, sheetGoal.target);
+  renderSheetEstimate();
+}
+
+sheetGoalTarget.addEventListener('input', () => {
+  const value = Math.min(GOAL_MAX, parseInt(sheetGoalTarget.value, 10) || 0);
+  sheetGoal.target = value || null;
+  renderSheetGoalLabel();
+  syncEstimateWithGoal();
+});
+
+function selectGoalUnit(unit) {
+  sheetGoal.unit = unit;
+  // Своя одиниця, якою скористались, піднімається першою — найдовше невживані витісняються
+  if (!GOAL_UNITS.includes(unit)) {
+    taskStore.goalUnits = [unit, ...taskStore.goalUnits.filter((u) => u !== unit)].slice(0, GOAL_CUSTOM_MAX);
+    saveTasks();
+  }
+  renderSheetGoalLabel();
+  renderGoalUnits();
+  syncEstimateWithGoal();
+}
+
+function renderGoalUnits() {
+  const box = document.getElementById('task-sheet-goal-units');
+  box.innerHTML = '';
+  const units = [...GOAL_UNITS, ...taskStore.goalUnits];
+  // Одиницю задачі могли видалити зі списку — у самій задачі вона лишається
+  if (!units.includes(sheetGoal.unit)) units.push(sheetGoal.unit);
+  units.forEach((unit) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'goal-chip' + (unit === sheetGoal.unit ? ' on' : '');
+    chip.textContent = unit;
+    chip.addEventListener('click', () => {
+      if (chip.dataset.longPressed) return;
+      selectGoalUnit(unit);
+    });
+    if (taskStore.goalUnits.includes(unit)) attachUnitLongPress(chip, unit);
+    box.appendChild(chip);
+  });
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'goal-chip goal-chip-add';
+  add.textContent = '+ своя';
+  add.addEventListener('click', () => startCustomUnit(add));
+  box.appendChild(add);
+}
+
+// Довгий тап по своїй одиниці — видалити її зі списку (з можливістю скасувати)
+function attachUnitLongPress(chip, unit) {
+  let timer = null;
+  const start = () => {
+    delete chip.dataset.longPressed;
+    timer = setTimeout(() => {
+      chip.dataset.longPressed = '1';
+      if (navigator.vibrate) navigator.vibrate(15);
+      const before = [...taskStore.goalUnits];
+      taskStore.goalUnits = taskStore.goalUnits.filter((u) => u !== unit);
+      saveTasks();
+      renderGoalUnits();
+      showUndo(`Одиницю «${unit}» видалено`, () => {
+        taskStore.goalUnits = before;
+        saveTasks();
+        renderGoalUnits();
+      });
+    }, 550);
+  };
+  const cancel = () => clearTimeout(timer);
+  chip.addEventListener('touchstart', start, { passive: true });
+  chip.addEventListener('mousedown', start);
+  ['touchend', 'touchmove', 'touchcancel', 'mouseup', 'mouseleave'].forEach((ev) => chip.addEventListener(ev, cancel));
+  chip.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+
+function startCustomUnit(addChip) {
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'goal-chip goal-chip-input';
+  input.maxLength = 14;
+  input.placeholder = 'напр. кроків';
+  input.enterKeyHint = 'done';
+  input.setAttribute('aria-label', 'Своя одиниця');
+  addChip.replaceWith(input);
+  input.focus();
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    const unit = input.value.trim().toLowerCase();
+    if (unit) selectGoalUnit(unit);
+    else renderGoalUnits();
+  };
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finish();
+    }
+    if (e.key === 'Escape') {
+      input.value = '';
+      finish();
+    }
+  });
+  input.addEventListener('blur', finish);
 }
 
 function setRepeatListOpen(open) {
@@ -1189,6 +1487,7 @@ function movedCopy(task, date) {
     title: task.title,
     flag: task.flag,
     estimate: task.estimate,
+    ...(task.goal ? { goal: { ...task.goal } } : {}),
     start: shiftDate(date, 1),
     repeat: { type: 'none' },
     until: null,
@@ -1236,6 +1535,8 @@ function saveTaskSheet() {
     sheetTask.estimate = sheetEstimate;
     sheetTask.repeat = sheetRepeat;
     sheetTask.start = sheetDate;
+    if (sheetGoal.target) sheetTask.goal = { target: sheetGoal.target, unit: sheetGoal.unit };
+    else delete sheetTask.goal;
   } else {
     newTask = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -1247,6 +1548,7 @@ function saveTaskSheet() {
       until: null,
       createdAt: new Date().toISOString(),
     };
+    if (sheetGoal.target) newTask.goal = { target: sheetGoal.target, unit: sheetGoal.unit };
     taskStore.tasks.push(newTask);
   }
   const addedElsewhere = !sheetTask && sheetDate !== currentDate;
@@ -1336,6 +1638,11 @@ function mergeTaskStores(existing, incoming) {
       [...new Set([...Object.keys(existing.actual || {}), ...Object.keys(incoming.actual || {})])]
         .map((date) => [date, { ...(incoming.actual || {})[date], ...(existing.actual || {})[date] }]),
     ),
+    progress: Object.fromEntries(
+      [...new Set([...Object.keys(existing.progress || {}), ...Object.keys(incoming.progress || {})])]
+        .map((date) => [date, { ...(incoming.progress || {})[date], ...(existing.progress || {})[date] }]),
+    ),
+    goalUnits: [...new Set([...(existing.goalUnits || []), ...(incoming.goalUnits || [])])].slice(0, GOAL_CUSTOM_MAX),
     settledThrough: [existing.settledThrough, incoming.settledThrough].filter(Boolean).sort().pop() || null,
   };
 }
@@ -1369,6 +1676,13 @@ function afterTimeDialog(fn) {
 }
 
 function openTimeDialog(task, date) {
+  // Мета в хвилинах уже й є фактичним часом — не перепитуємо
+  if (task.goal?.unit === 'хв') {
+    setActual(task, date, goalProgress(task, date));
+    saveTasks();
+    closeTimeDialog(false);
+    return;
+  }
   timeDialogTask = task;
   timeDialogDate = date;
   const planned = task.estimate || ESTIMATE_DEFAULT;

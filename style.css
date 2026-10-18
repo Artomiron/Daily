@@ -3607,3 +3607,200 @@ main {
 
 .day-report-move[hidden] { display: none; }
 .day-report .stat-tile { background: var(--bg); }
+
+/* ---------- Числова мета задачі ---------- */
+
+/* Кільце прогресу замість порожнього кружечка */
+.check-circle.goal-ring {
+  position: relative;
+  border-color: transparent;
+}
+
+/* Перебиваємо стилі галочки (.check-circle svg): її розмір і пунктир для анімації */
+.check-circle .goal-ring-svg {
+  position: absolute;
+  inset: -2px;
+  width: 28px;
+  height: 28px;
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  transform: rotate(-90deg);
+}
+
+.goal-ring-track { fill: none; stroke: var(--text-dim); stroke-width: 2; opacity: 0.45; }
+
+.goal-ring-bar {
+  fill: none;
+  stroke: var(--accent-green);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s ease-out;
+}
+
+.task.partial .check-circle { background: none; border-color: transparent; }
+.task.partial .goal-ring-bar { stroke: var(--accent-warm); }
+
+.task.done .check-circle.goal-ring { border-color: var(--accent-green); }
+.task.done .goal-ring-svg { display: none; }
+
+.goal-count { color: var(--accent-green); font-weight: 600; }
+.task.partial .goal-count { color: var(--accent-warm); }
+.task.done .goal-count { color: var(--text-dim); font-weight: 400; }
+
+/* Шторка «Скільки зроблено?» */
+.goal-sheet-task { margin-top: 0; }
+
+.goal-big-ring {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  margin: 4px auto 16px;
+}
+
+.goal-big-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.goal-big-track { fill: none; stroke: #2c2c2c; stroke-width: 11; }
+
+.goal-big-bar {
+  fill: none;
+  stroke: var(--accent-green);
+  stroke-width: 11;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.35s cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+
+.goal-sheet.reached .goal-big-bar { filter: drop-shadow(0 0 6px rgba(95, 211, 160, 0.7)); }
+
+.goal-big-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.goal-big-num b { font-size: 2.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.goal-big-num span { margin-top: 4px; font-size: 0.9rem; color: var(--text-dim); }
+
+.goal-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.goal-stepper button {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: #2c2c2c;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.goal-stepper input {
+  width: 96px;
+  padding: 10px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #262626;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  -moz-appearance: textfield;
+}
+
+.goal-stepper input::-webkit-outer-spin-button,
+.goal-stepper input::-webkit-inner-spin-button,
+.goal-target::-webkit-outer-spin-button,
+.goal-target::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.goal-quick {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.goal-quick button {
+  height: 42px;
+  border-radius: 21px;
+  border: 1px solid rgba(95, 211, 160, 0.4);
+  background: rgba(95, 211, 160, 0.1);
+  color: var(--accent-green);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.goal-sheet-all {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 10px;
+  border-radius: 23px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--accent-green);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.goal-sheet-all[hidden] { display: none; }
+
+/* Мета в шторці задачі */
+.goal-label.on { color: var(--accent); font-weight: 600; }
+
+.goal-editor {
+  padding: 4px 12px 12px;
+  border-top: 0.5px solid var(--border);
+}
+
+.goal-editor[hidden] { display: none; }
+
+.goal-editor-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.goal-target {
+  width: 90px;
+  padding: 9px 0;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--bg);
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+  -moz-appearance: textfield;
+}
+
+.goal-target:focus { outline: none; box-shadow: 0 0 0 3px rgba(155, 125, 255, 0.25); }
+
+.goal-editor-hint { color: var(--text-dim); font-size: 0.9rem; }
+
+.goal-units { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.goal-chip {
+  min-height: 34px;
+  padding: 0 13px;
+  border-radius: 17px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 0.9rem;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.goal-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.goal-chip-add { color: var(--accent); }
+.goal-chip-input { width: 130px; border-color: var(--accent); cursor: text; }
+.goal-chip-input:focus { outline: none; }
+
+.goal-editor-foot { margin: 10px 2px 0; font-size: 0.75rem; color: var(--text-dim); }
+.goal-count.empty { color: var(--text-dim); font-weight: 400; }
