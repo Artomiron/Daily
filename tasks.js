@@ -491,12 +491,18 @@ function renderTasks() {
 
   const tasks = tasksForDate(currentDate);
   const doneCount = tasks.filter((t) => isTaskDone(t, currentDate)).length;
-  // Шкала до останнього порогу зірок — щойно на день є справи, навіть якщо ще жодної не виконано
+  // Шкала — усі справи дня: позначки лише тих зірок, які з таким планом можна набрати,
+  // а повзунок показує, скільки вже виконано
   const progress = document.getElementById('tasks-progress');
-  const goal = STAR_TIERS[STAR_TIERS.length - 1];
   progress.hidden = !tasks.length;
-  progress.querySelector('.tier-fill').style.width = `${(Math.min(doneCount, goal) / goal) * 100}%`;
-  renderTierMarks(progress.querySelector('.tier-track'), doneCount);
+  const track = progress.querySelector('.tier-track');
+  const share = tasks.length ? Math.min(1, doneCount / tasks.length) : 0;
+  // Градієнт розтягнуто на всю шкалу й відкрито до поточного місця — що далі, то епічніший колір
+  progress.style.setProperty('--share', share);
+  renderTierMarks(track, doneCount, tasks.length);
+  const knob = track.querySelector('.tier-knob');
+  knob.style.left = `${share * 100}%`;
+  knob.textContent = doneCount;
   if (!starAnimating) renderStarWidget();
 
   const list = document.getElementById('task-list');
@@ -968,26 +974,33 @@ let starAnimating = false;
 const DAY_STAR_SVG = '<svg class="day-star" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z"/></svg>';
 
 // Три зірочки дня по центру; у день без справ не показуємо
+// Показуємо лише зірки, яких можна досягти з поточним планом: при 10 справах — дві
+function reachableStars(date) {
+  return Math.max(dayStarsOn(date), starsForCount(tasksForDate(date).length));
+}
+
 function renderStarWidget() {
   const count = doneCountOn(currentDate);
   const stars = dayStarsOn(currentDate);
+  const reachable = reachableStars(currentDate);
   const shape = starWidget.querySelector('.star-shape');
-  if (!shape.children.length) shape.innerHTML = DAY_STAR_SVG.repeat(STAR_TIERS.length);
+  if (shape.children.length !== reachable) shape.innerHTML = DAY_STAR_SVG.repeat(reachable);
+  shape.classList.toggle('full-set', reachable === STAR_TIERS.length);
   [...shape.children].forEach((star, i) => star.classList.toggle('on', i < stars));
-  starWidget.classList.toggle('is-full', stars === STAR_TIERS.length);
-  starWidget.hidden = !tasksForDate(currentDate).length;
-  starWidget.setAttribute('aria-label', `Зірок за день: ${stars} з ${STAR_TIERS.length}. Виконано справ: ${count}`);
+  starWidget.classList.toggle('is-full', reachable > 0 && stars === reachable);
+  starWidget.hidden = !reachable;
+  starWidget.setAttribute('aria-label', `Зірок за день: ${stars} з ${reachable}. Виконано справ: ${count}`);
 }
 
-// Позначки порогів на шкалі: зірочка над рискою і число справ під нею
-function renderTierMarks(track, count) {
-  const goal = STAR_TIERS[STAR_TIERS.length - 1];
+// Позначки порогів на шкалі всіх справ дня: риска й зірочки над нею; недосяжні з таким планом не малюємо
+function renderTierMarks(track, count, planned) {
   track.querySelectorAll('.tier-mark').forEach((m) => m.remove());
   STAR_TIERS.forEach((min, i) => {
+    if (min > planned) return;
     const mark = document.createElement('span');
-    mark.className = 'tier-mark' + (count >= min ? ' reached' : '') + (i === STAR_TIERS.length - 1 ? ' last' : '');
-    mark.style.left = `${(min / goal) * 100}%`;
-    mark.innerHTML = `<i aria-hidden="true">${'★'.repeat(i + 1)}</i><b>${min}</b>`;
+    mark.className = 'tier-mark' + (count >= min ? ' reached' : '') + (min === planned ? ' last' : '');
+    mark.style.left = `${(min / planned) * 100}%`;
+    mark.innerHTML = `<i aria-hidden="true">${'★'.repeat(i + 1)}</i>`;
     track.appendChild(mark);
   });
 }
