@@ -3764,3 +3764,83 @@ main {
 .medal-bronze { background: linear-gradient(180deg, #F2B98A, #CD7F45 55%, #8E5126); }
 .medal-none { background: #5b5b66; }
 .completion-bar.empty { background: var(--border); }
+
+/* Середнє за попередні тижні — пунктирна риска поверх стовпчика */
+.completion-track { position: relative; }
+
+.completion-avg {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  height: 0;
+  border-top: 2px dashed rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+}
+
+.avg-mark {
+  display: inline-block;
+  width: 14px;
+  height: 0;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-top: 2px dashed rgba(255, 255, 255, 0.75);
+}
+
+#task-chart-avg-legend[hidden] { display: none; }
+
+/* ---------- Особисті рекорди ---------- */
+
+.task-records { display: flex; flex-direction: column; }
+
+.record-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 0.5px solid var(--border);
+}
+
+.record-row:first-child { border-top: none; padding-top: 2px; }
+.record-row:last-child { padding-bottom: 0; }
+
+.record-icon {
+  flex: 0 0 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(255, 194, 51, 0.12);
+  font-size: 1.2rem;
+}
+
+.record-body { flex: 1 1 auto; min-width: 0; }
+
+.record-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.record-title { font-size: 0.92rem; }
+.record-value { font-size: 1.15rem; color: #FFD54A; white-space: nowrap; }
+.record-when { font-size: 0.78rem; color: var(--text-dim); margin-top: 1px; }
+
+.record-bar {
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.record-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #FF9F1C, #FFC233);
+  transition: width 0.6s cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+
+.record-note { margin-top: 5px; font-size: 0.8rem; color: var(--text-dim); }
+.record-row.new-record .record-note { color: #FFD54A; font-weight: 600; }
+.record-row.new-record .record-icon { background: rgba(255, 194, 51, 0.25); box-shadow: 0 0 12px rgba(255, 194, 51, 0.35); }

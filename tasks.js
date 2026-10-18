@@ -1778,34 +1778,135 @@ function renderTaskStats(dates) {
     .map((t) => `<div class="stat-tile"><div class="stat-value">${t.value}</div><div class="stat-label">${t.label}</div></div>`)
     .join('');
 
+  renderTaskRecords();
   renderCompletionChart(perDay);
   renderTimeChart(perDay);
 }
 
+const AVG_WEEKS = 4;
+
+// Тиждень — дні тижня; довші періоди — число місяця через кілька днів
 function chartLabel(perDay, i) {
+  const date = fromISODate(perDay[i].date);
+  if (perDay.length <= 7) return WEEK_SHORT[date.getDay()];
   const every = Math.ceil(perDay.length / 7);
-  return (perDay.length - 1 - i) % every === 0 ? fromISODate(perDay[i].date).getDate() : '';
+  return (perDay.length - 1 - i) % every === 0 ? date.getDate() : '';
 }
 
-// Скільки задач виконано за день; колір — зірки дня: золото, срібло, бронза або нейтральний
+// Скільки в середньому виконували в цей самий день тижня за попередні тижні (лише дні, коли були справи)
+function weekdayAverage(date) {
+  const counts = [];
+  for (let k = 1; k <= AVG_WEEKS; k++) {
+    const d = shiftDate(date, -7 * k);
+    if (tasksForDate(d).length) counts.push(doneCountOn(d));
+  }
+  return counts.length ? counts.reduce((a, b) => a + b, 0) / counts.length : null;
+}
+
+// Скільки задач виконано за день; колір — зірки дня: золото, срібло, бронза або нейтральний.
+// На тижні поверх стовпчика — риска середнього за попередні тижні в той самий день тижня
 function renderCompletionChart(perDay) {
   const chart = document.getElementById('task-stats-chart');
   chart.innerHTML = '';
   chart.classList.toggle('dense', perDay.length > 31);
-  const max = Math.max(1, ...perDay.map((d) => d.done));
+  const week = perDay.length <= 7;
+  const averages = perDay.map((day) => (week ? weekdayAverage(day.date) : null));
+  document.getElementById('task-chart-avg-legend').hidden = !averages.some((a) => a != null);
+  const max = Math.max(1, ...perDay.map((d) => d.done), ...averages.filter((a) => a != null));
   perDay.forEach((day, i) => {
     const col = document.createElement('div');
     col.className = 'completion-col';
-    col.title = `${capitalize(formatDate(day.date, 'short'))}: виконано ${day.done} з ${day.planned}`;
+    const avg = averages[i];
+    col.title = `${capitalize(formatDate(day.date, 'short'))}: виконано ${day.done} з ${day.planned}`
+      + (avg != null ? `, зазвичай ${avg.toFixed(1).replace('.', ',')}` : '');
     col.innerHTML = `
       <div class="completion-track">
         <div class="completion-bar ${STAR_MEDALS[chartDayStars(day)]}${day.done ? '' : ' empty'}" style="height:${day.done ? (day.done / max) * 100 : 3}%">
           ${day.done && perDay.length <= 14 ? `<span class="completion-value">${day.done}</span>` : ''}
         </div>
+        ${avg != null ? `<span class="completion-avg" style="bottom:${(avg / max) * 100}%"></span>` : ''}
       </div>
       <span class="completion-label">${chartLabel(perDay, i)}</span>`;
     chart.appendChild(col);
   });
+}
+
+// ---------- Особисті рекорди ----------
+// За всю історію: найкращий день за кількістю справ і найзірковіший тиждень (пн–нд).
+// Поруч — де ви зараз відносно рекорду, щоб було видно, скільки лишилось його побити.
+
+function historyStart() {
+  const dates = [...taskStore.tasks.map((t) => t.start), ...Object.keys(taskStore.done)];
+  return dates.length ? dates.sort()[0] : null;
+}
+
+function renderTaskRecords() {
+  const box = document.getElementById('task-records');
+  const start = historyStart();
+  const today = todayISO();
+  if (!start) {
+    box.innerHTML = '<p class="card-hint">Виконуйте справи — тут з\'являться ваші рекорди.</p>';
+    return;
+  }
+  let bestDay = null;
+  const weeks = new Map();
+  for (let date = start; date <= today; date = shiftDate(date, 1)) {
+    const done = doneCountOn(date);
+    if (done && (!bestDay || done > bestDay.done)) bestDay = { date, done };
+    const week = weekStart(date);
+    weeks.set(week, (weeks.get(week) || 0) + chartDayStars({ date, done }));
+  }
+  const thisWeek = weekStart(today);
+  let bestWeek = null;
+  weeks.forEach((stars, week) => {
+    if (stars && (!bestWeek || stars > bestWeek.stars)) bestWeek = { week, stars };
+  });
+
+  const todayDone = doneCountOn(today);
+  const weekStars = weeks.get(thisWeek) || 0;
+  box.innerHTML = '';
+  box.appendChild(recordRow({
+    icon: '🏆',
+    title: 'Найкращий день',
+    value: bestDay ? `${bestDay.done} ${pluralTasks(bestDay.done)}` : '—',
+    when: bestDay ? (bestDay.date === today ? 'сьогодні' : formatDayMonth(bestDay.date)) : '',
+    current: todayDone,
+    record: bestDay?.done || 0,
+    isCurrent: bestDay?.date === today,
+    left: (n) => `Сьогодні ${todayDone} — до рекорду ще ${n} ${pluralTasks(n)}`,
+  }));
+  box.appendChild(recordRow({
+    icon: '⭐',
+    title: 'Найбільше зірок за тиждень',
+    value: bestWeek ? `${bestWeek.stars} ★` : '—',
+    when: bestWeek ? (bestWeek.week === thisWeek ? 'цей тиждень' : `${formatDayMonth(bestWeek.week)} – ${formatDayMonth(shiftDate(bestWeek.week, 6))}`) : '',
+    current: weekStars,
+    record: bestWeek?.stars || 0,
+    isCurrent: bestWeek?.week === thisWeek,
+    left: (n) => `Цього тижня ${weekStars} ★ — до рекорду ще ${n} ★`,
+  }));
+}
+
+function recordRow({ icon, title, value, when, current, record, isCurrent, left }) {
+  const row = document.createElement('div');
+  row.className = 'record-row' + (isCurrent ? ' new-record' : '');
+  const share = record ? Math.min(1, current / record) : 0;
+  const note = !record ? '' : isCurrent ? 'Новий рекорд! Так тримати 🎉' : left(record - current);
+  row.innerHTML = `
+    <span class="record-icon" aria-hidden="true">${icon}</span>
+    <div class="record-body">
+      <div class="record-head">
+        <span class="record-title"></span>
+        <b class="record-value"></b>
+      </div>
+      <div class="record-when"></div>
+      ${record ? `<div class="record-bar"><i style="width:${share * 100}%"></i></div><div class="record-note"></div>` : ''}
+    </div>`;
+  row.querySelector('.record-title').textContent = title;
+  row.querySelector('.record-value').textContent = value;
+  row.querySelector('.record-when').textContent = when;
+  if (record) row.querySelector('.record-note').textContent = note;
+  return row;
 }
 
 const STAR_MEDALS = ['medal-none', 'medal-bronze', 'medal-silver', 'medal-gold'];

@@ -139,7 +139,6 @@
     <div class="period-row">
       <button class="period-btn active" data-days="7">7 днів</button>
       <button class="period-btn" data-days="30">30 днів</button>
-      <button class="period-btn" data-days="90">90 днів</button>
     </div>
     <div id="stats-diary">
     <div id="stats-summary" class="stats-summary"></div>
@@ -161,12 +160,17 @@
     <div id="stats-tasks" hidden>
       <div id="task-stats-summary" class="stats-summary"></div>
       <div class="card">
+        <h2 class="card-title">Особисті рекорди</h2>
+        <div id="task-records" class="task-records"></div>
+      </div>
+      <div class="card">
         <h2 class="card-title">Виконано за день</h2>
         <div class="chart-legend">
           <span><i class="dot medal-gold"></i>3 ★</span>
           <span><i class="dot medal-silver"></i>2 ★</span>
           <span><i class="dot medal-bronze"></i>1 ★</span>
           <span><i class="dot medal-none"></i>Без зірок</span>
+          <span id="task-chart-avg-legend" hidden><i class="avg-mark"></i>Середнє за 4 попередні тижні</span>
         </div>
         <div id="task-stats-chart" class="completion-chart"></div>
       </div>
