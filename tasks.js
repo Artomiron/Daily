@@ -1,5 +1,5 @@
 // Задачі на день: разові або з повтором (щодня, по буднях, у вибрані дні тижня, кожні N днів).
-// Зірки дня залежать від кількості виконаних справ: за замовчуванням 4 — одна, 9 — дві, 15 — три.
+// Зірки дня залежать від кількості виконаних справ: за замовчуванням 5 — одна, 10 — дві, 15 — три.
 // Пороги налаштовуються; starTiers: [{ since, tiers }] — історія, щоб минулі дні рахувались за тодішніми.
 // Сховище: { tasks: [{ id, title, start, repeat, until, createdAt }], done: { date: [id] },
 //            skipped: { date: [id] }, dayStars: { date: n }, penalties: { date: [id] }, settledThrough }
@@ -48,7 +48,10 @@ const INTERVAL_MIN = 2;
 const INTERVAL_MAX = 30;
 
 // Скільки виконаних справ за день дають 1, 2 і 3 зірки
-const DEFAULT_STAR_TIERS = [4, 9, 15];
+const DEFAULT_STAR_TIERS = [5, 10, 15];
+// До 19.10.2026 стандартними були 4 · 9 · 15 — минулі дні рахуємо за ними, як і будь-яку зміну порогів
+const PREVIOUS_DEFAULT_TIERS = [4, 9, 15];
+const DEFAULT_TIERS_SINCE = '2026-10-19';
 const STAR_COUNT = 3;
 const STAR_RULES_SINCE = '2026-10-18';
 const LEGACY_STAR_GOAL = 5;
@@ -121,7 +124,8 @@ function pluralTasks(n) {
 // Пороги, що діяли того дня: останній запис, який почав діяти не пізніше
 function tiersOn(date) {
   const entry = [...taskStore.starTiers].sort((a, b) => a.since.localeCompare(b.since)).filter((e) => e.since <= date).pop();
-  return entry ? entry.tiers : DEFAULT_STAR_TIERS;
+  if (entry) return entry.tiers;
+  return date < DEFAULT_TIERS_SINCE ? PREVIOUS_DEFAULT_TIERS : DEFAULT_STAR_TIERS;
 }
 
 function starsForCount(n, date) {
