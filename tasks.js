@@ -1788,7 +1788,7 @@ function chartLabel(perDay, i) {
   return (perDay.length - 1 - i) % every === 0 ? fromISODate(perDay[i].date).getDate() : '';
 }
 
-// Скільки задач виконано за день; зелений стовпчик — виконано все заплановане
+// Скільки задач виконано за день
 function renderCompletionChart(perDay) {
   const chart = document.getElementById('task-stats-chart');
   chart.innerHTML = '';
@@ -1798,10 +1798,9 @@ function renderCompletionChart(perDay) {
     const col = document.createElement('div');
     col.className = 'completion-col';
     col.title = `${capitalize(formatDate(day.date, 'short'))}: виконано ${day.done} з ${day.planned}`;
-    const full = day.planned && day.done === day.planned;
     col.innerHTML = `
       <div class="completion-track">
-        <div class="completion-bar${full ? ' full' : ''}${day.done ? '' : ' empty'}" style="height:${day.done ? (day.done / max) * 100 : 3}%">
+        <div class="completion-bar${day.done ? '' : ' empty'}" style="height:${day.done ? (day.done / max) * 100 : 3}%">
           ${day.done && perDay.length <= 14 ? `<span class="completion-value">${day.done}</span>` : ''}
         </div>
       </div>
