@@ -1787,7 +1787,7 @@ function chartLabel(perDay, i) {
   return (perDay.length - 1 - i) % every === 0 ? fromISODate(perDay[i].date).getDate() : '';
 }
 
-// Скільки задач виконано за день
+// Скільки задач виконано за день; колір — зірки дня: золото, срібло, бронза або нейтральний
 function renderCompletionChart(perDay) {
   const chart = document.getElementById('task-stats-chart');
   chart.innerHTML = '';
@@ -1799,13 +1799,20 @@ function renderCompletionChart(perDay) {
     col.title = `${capitalize(formatDate(day.date, 'short'))}: виконано ${day.done} з ${day.planned}`;
     col.innerHTML = `
       <div class="completion-track">
-        <div class="completion-bar${day.done ? '' : ' empty'}" style="height:${day.done ? (day.done / max) * 100 : 3}%">
+        <div class="completion-bar ${STAR_MEDALS[chartDayStars(day)]}${day.done ? '' : ' empty'}" style="height:${day.done ? (day.done / max) * 100 : 3}%">
           ${day.done && perDay.length <= 14 ? `<span class="completion-value">${day.done}</span>` : ''}
         </div>
       </div>
       <span class="completion-label">${chartLabel(perDay, i)}</span>`;
     chart.appendChild(col);
   });
+}
+
+const STAR_MEDALS = ['medal-none', 'medal-bronze', 'medal-silver', 'medal-gold'];
+
+// День до нових правил зірок рахуємо за кількістю справ, як у ранковому звіті
+function chartDayStars(day) {
+  return day.date < STAR_RULES_SINCE ? starsForCount(day.done) : dayStarsOn(day.date);
 }
 
 // Очікуваний і фактичний час виконаних задач по днях — лініями, як «Стан по днях»

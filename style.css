@@ -3757,3 +3757,10 @@ main {
 
 .goal-editor-foot { margin: 10px 2px 0; font-size: 0.75rem; color: var(--text-dim); }
 .goal-count.empty { color: var(--text-dim); font-weight: 400; }
+
+/* «Виконано за день»: колір стовпчика — скільки зірок принесла кількість справ */
+.medal-gold { background: linear-gradient(180deg, #FFE58A, #FFC233 55%, #E89B12); }
+.medal-silver { background: linear-gradient(180deg, #F4F6FA, #C3C9D3 55%, #8E96A3); }
+.medal-bronze { background: linear-gradient(180deg, #F2B98A, #CD7F45 55%, #8E5126); }
+.medal-none { background: #5b5b66; }
+.completion-bar.empty { background: var(--border); }
