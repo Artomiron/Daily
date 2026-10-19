@@ -744,15 +744,14 @@ function mergeEntries(existing, incoming) {
 renderToday();
 const startupPenalties = settlePenalties();
 renderTasks();
-// За замовчуванням відкриваються «Задачі»; з нагадування про оцінку дня — «Сьогодні»
+// За замовчуванням відкриваються «Задачі»; з нагадування про оцінку дня — «Щоденник»
 if (location.hash === '#today') {
   switchTab('today');
   history.replaceState(null, '', location.pathname + location.search);
-  announcePenalties(startupPenalties);
-} else {
-  // Ранковий звіт за вчора; тост про штрафи — вже після нього
-  showDayReport(() => announcePenalties(startupPenalties));
 }
+// Ранковий звіт за вчора — і тоді, коли зранку відкрили з пуша (увечері його не буде: діє правило «з 6:00»
+// і показ раз на день); тост про штрафи — вже після звіту
+showDayReport(() => announcePenalties(startupPenalties));
 
 // Якщо застосунок лишався відкритим через північ — повертаємось на новий день
 document.addEventListener('visibilitychange', () => {
