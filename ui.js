@@ -80,7 +80,7 @@ function attachSheetDrag(sheet, close) {
 }
 
 // ---------- Смужка тижня ----------
-// Спільна для «Сьогодні» й «Задач»: місяць (тап — системний календар), «Сьогодні», стрілки тижнів
+// Спільна для «Сьогодні» й «Задач»: місяць (тап — системний календар), «Сьогодні», стрілки на сусідній день
 // і 7 днів із крапкою стану. Свайп по смужці гортає тижні. Працює з глобальними currentDate і setDate.
 //   statusFor(date) → 'none' | 'open' | 'done' — колір крапки під днем
 //   extra — елемент, який стане в кінець рядка (наприклад, кнопка магазину)
@@ -102,10 +102,10 @@ function createWeekPicker(root, { statusFor, extra } = {}) {
         <input type="date" class="week-date-input" aria-label="Обрати дату">
       </label>
       <button type="button" class="week-today" hidden>Сьогодні</button>
-      <button type="button" class="week-nav week-prev" aria-label="Попередній тиждень">
+      <button type="button" class="week-nav week-prev" aria-label="Попередній день">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
       </button>
-      <button type="button" class="week-nav week-next" aria-label="Наступний тиждень">
+      <button type="button" class="week-nav week-next" aria-label="Наступний день">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </button>
     </div>
@@ -115,8 +115,9 @@ function createWeekPicker(root, { statusFor, extra } = {}) {
   const input = root.querySelector('.week-date-input');
   const strip = root.querySelector('.week-strip');
 
-  root.querySelector('.week-prev').addEventListener('click', () => setDate(shiftDate(currentDate, -7)));
-  root.querySelector('.week-next').addEventListener('click', () => setDate(shiftDate(currentDate, 7)));
+  // Стрілки — на сусідній день (з неділі вперед — понеділок наступного тижня); свайп по смужці гортає тижні
+  root.querySelector('.week-prev').addEventListener('click', () => setDate(shiftDate(currentDate, -1)));
+  root.querySelector('.week-next').addEventListener('click', () => setDate(shiftDate(currentDate, 1)));
   root.querySelector('.week-today').addEventListener('click', () => setDate(todayISO()));
   input.addEventListener('change', () => {
     if (input.value) setDate(input.value);
