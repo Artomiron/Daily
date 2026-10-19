@@ -114,7 +114,11 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === `tab-${tab}`));
-  if (tab === 'tasks') renderTasks();
+  if (tab === 'tasks') {
+    renderTasks();
+    // Відкрили з пуша на «Щоденнику» — ранковий звіт чекає першого переходу на «Задачі»
+    showDayReport();
+  }
   if (tab === 'stats') renderStats();
   window.scrollTo(0, 0);
 }
@@ -748,10 +752,11 @@ renderTasks();
 if (location.hash === '#today') {
   switchTab('today');
   history.replaceState(null, '', location.pathname + location.search);
+  announcePenalties(startupPenalties);
+} else {
+  // Ранковий звіт за вчора; тост про штрафи — вже після нього
+  showDayReport(() => announcePenalties(startupPenalties));
 }
-// Ранковий звіт за вчора — і тоді, коли зранку відкрили з пуша (увечері його не буде: діє правило «з 6:00»
-// і показ раз на день); тост про штрафи — вже після звіту
-showDayReport(() => announcePenalties(startupPenalties));
 
 // Якщо застосунок лишався відкритим через північ — повертаємось на новий день
 document.addEventListener('visibilitychange', () => {
