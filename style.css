@@ -3975,3 +3975,13 @@ main {
 
 .star-tiers-reset { width: 100%; }
 .star-tiers-reset:disabled { opacity: 0.4; }
+
+/* Виконана задача: план закреслено, поруч фактичний час — червоним довше, зеленим швидше */
+.meta-part.time-over { color: #ff6b6b; }
+.meta-part.time-under { color: var(--accent-green); }
+
+.time-plan {
+  margin-right: 4px;
+  text-decoration: line-through;
+  opacity: 0.6;
+}

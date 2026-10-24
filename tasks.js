@@ -573,7 +573,18 @@ function renderTaskRow(task) {
     const part = document.createElement('span');
     part.className = 'meta-part';
     part.innerHTML = CLOCK_SVG;
-    part.append(formatEstimate(task.estimate));
+    // Виконана задача з фактичним часом, що не збігся з планом: закреслений план і факт —
+    // червоним, якщо вийшло довше, зеленим, якщо швидше
+    const actual = done ? taskStore.actual[currentDate]?.[task.id] : null;
+    if (actual && actual !== task.estimate) {
+      part.classList.add(actual > task.estimate ? 'time-over' : 'time-under');
+      const plan = document.createElement('span');
+      plan.className = 'time-plan';
+      plan.textContent = formatEstimate(task.estimate);
+      part.append(plan, formatEstimate(actual));
+    } else {
+      part.append(formatEstimate(task.estimate));
+    }
     metaEl.appendChild(part);
   }
   if (meta) {
