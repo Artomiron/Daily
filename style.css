@@ -3985,3 +3985,148 @@ main {
   text-decoration: line-through;
   opacity: 0.6;
 }
+
+/* ---------- Історія думок ---------- */
+
+.history-btn {
+  position: relative;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  cursor: pointer;
+}
+
+.history-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.history-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.history-badge[hidden] { display: none; }
+
+.history-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: #262626;
+  color: var(--text-dim);
+}
+
+.history-search svg {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.history-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 11px 0;
+  border: none;
+  background: none;
+  font-size: 1rem;
+}
+
+.history-search input:focus { outline: none; }
+
+.history-day { margin-bottom: 18px; }
+
+.history-day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 4px 6px;
+}
+
+.history-day-head b { font-size: 0.95rem; }
+.history-day-head span { font-size: 0.75rem; color: var(--text-dim); }
+
+.history-day-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-day-card:active { background: var(--bg-card-hover); }
+
+.history-day-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.history-chip {
+  padding: 3px 9px;
+  border-radius: 11px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.history-chip.neutral { background: #262626; color: var(--text-dim); }
+.history-chip.stars { background: rgba(255, 194, 51, 0.12); color: #FFD54A; }
+
+.history-thought {
+  display: block;
+  padding: 10px 12px;
+}
+
+.history-thought + .history-thought { border-top: 0.5px solid var(--border); }
+
+.history-thought time {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.history-thought span {
+  display: block;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.history-empty { text-align: center; margin-top: 30px; }

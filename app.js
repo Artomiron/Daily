@@ -448,7 +448,115 @@ function startEditThought(item, textEl, thought) {
   area.addEventListener('blur', finish, { once: true });
 }
 
+// ---------- Історія думок ----------
+// Усі думки за днями, найновіші зверху; у картці дня — стан, справи й зірки, індекс тіла
+
+const thoughtsHistory = document.getElementById('thoughts-history');
+const thoughtsSearch = document.getElementById('thoughts-search');
+
+function pluralThoughts(n) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'думка';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'думки';
+  return 'думок';
+}
+
+function totalThoughts() {
+  return Object.values(entries).reduce((sum, e) => sum + (e.thoughts || []).filter((t) => t.text).length, 0);
+}
+
+function updateThoughtsTotal() {
+  const badge = document.getElementById('thoughts-total');
+  const total = totalThoughts();
+  badge.hidden = !total;
+  badge.textContent = total;
+}
+
+function dayInfoChips(date) {
+  const entry = entries[date] || {};
+  const chips = [];
+  if (isStateFilled(entry.state)) {
+    const zone = CIRCUMPLEX_ZONES[entry.state.zone];
+    const label = entry.state.zone === 'neutral' ? zone.name : entry.state.words.join(' · ');
+    chips.push({ text: `${zone.dot} ${label}`, style: `background:${zone.bg};color:${zone.text}` });
+  } else {
+    chips.push({ text: 'День не оцінено', cls: 'neutral' });
+  }
+  const done = doneCountOn(date);
+  if (done) {
+    const stars = chartDayStars({ date, done });
+    chips.push(stars
+      ? { text: `${'★'.repeat(stars)} ${done} ${pluralTasks(done)}`, cls: 'stars' }
+      : { text: `${done} ${pluralTasks(done)}`, cls: 'neutral' });
+  }
+  if (isBodyFilled(entry.body)) chips.push({ text: `Тіло ${Math.round(bodyIndex(entry.body))}`, cls: 'neutral' });
+  return chips;
+}
+
+function renderThoughtsHistory() {
+  const list = document.getElementById('thoughts-history-list');
+  const query = thoughtsSearch.value.trim().toLowerCase();
+  list.innerHTML = '';
+  const today = todayISO();
+  const days = Object.keys(entries).sort().reverse();
+  let shown = 0;
+  days.forEach((date) => {
+    const thoughts = (entries[date].thoughts || [])
+      .filter((t) => t.text && (!query || t.text.toLowerCase().includes(query)))
+      .reverse();
+    if (!thoughts.length) return;
+    shown++;
+    const day = document.createElement('section');
+    day.className = 'history-day';
+    const title = date === today ? `Сьогодні, ${formatDayMonth(date)}` : capitalize(formatDate(date, 'short'));
+    day.innerHTML = `
+      <div class="history-day-head"><b></b><span>${thoughts.length} ${pluralThoughts(thoughts.length)}</span></div>
+      <button type="button" class="history-day-card">
+        <span class="history-day-info"></span>
+      </button>`;
+    day.querySelector('b').textContent = title;
+    const card = day.querySelector('.history-day-card');
+    const info = day.querySelector('.history-day-info');
+    dayInfoChips(date).forEach((c) => {
+      const chip = document.createElement('span');
+      chip.className = `history-chip ${c.cls || ''}`;
+      if (c.style) chip.style.cssText = c.style;
+      chip.textContent = c.text;
+      info.appendChild(chip);
+    });
+    thoughts.forEach((t) => {
+      const item = document.createElement('span');
+      item.className = 'history-thought';
+      item.innerHTML = '<time></time><span></span>';
+      item.querySelector('time').textContent = t.time || '';
+      item.querySelector('span').textContent = t.text;
+      card.appendChild(item);
+    });
+    // Тап по дню — відкриваємо його в «Щоденнику»
+    card.addEventListener('click', () => {
+      thoughtsHistory.hidden = true;
+      document.getElementById('thoughts-modal').hidden = true;
+      setDate(date);
+      switchTab('today');
+    });
+    list.appendChild(day);
+  });
+  if (!shown) {
+    list.innerHTML = `<p class="card-hint history-empty">${query ? 'Нічого не знайдено.' : 'Тут з\'являться всі ваші думки, згруповані за днями.'}</p>`;
+  }
+}
+
+document.getElementById('open-thoughts-history').addEventListener('click', () => {
+  thoughtsSearch.value = '';
+  renderThoughtsHistory();
+  thoughtsHistory.hidden = false;
+  thoughtsHistory.scrollTop = 0;
+});
+thoughtsSearch.addEventListener('input', renderThoughtsHistory);
+
 function updateThoughtsButton(count) {
+  updateThoughtsTotal();
   const badge = document.getElementById('thoughts-count');
   badge.hidden = !count;
   badge.textContent = count;

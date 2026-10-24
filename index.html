@@ -444,6 +444,10 @@
     <div class="app-modal-header">
       <button type="button" class="app-modal-back" data-close-modal="thoughts-modal"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Щоденник</button>
       <h2 class="app-modal-title">💭 Думки</h2>
+      <button type="button" id="open-thoughts-history" class="history-btn" aria-label="Історія всіх думок">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4.5v4h4"/><path d="M12 7.5V12l3 2"/></svg>
+        <span id="thoughts-total" class="history-badge" hidden></span>
+      </button>
     </div>
     <p id="thoughts-date" class="app-modal-hint"></p>
     <div class="card">
@@ -451,6 +455,20 @@
       <button type="button" id="add-thought-btn" class="primary-btn">Додати думку</button>
     </div>
     <div id="thoughts-list" class="thoughts-list"></div>
+  </div>
+</section>
+
+<section id="thoughts-history" class="app-modal" hidden>
+  <div class="app-modal-inner">
+    <div class="app-modal-header">
+      <button type="button" class="app-modal-back" data-close-modal="thoughts-history"><svg class="back-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Думки</button>
+      <h2 class="app-modal-title">Історія думок</h2>
+    </div>
+    <label class="history-search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+      <input type="search" id="thoughts-search" placeholder="Пошук у думках" autocomplete="off" enterkeyhint="search">
+    </label>
+    <div id="thoughts-history-list"></div>
   </div>
 </section>
 
