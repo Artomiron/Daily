@@ -4130,3 +4130,105 @@ main {
 }
 
 .history-empty { text-align: center; margin-top: 30px; }
+
+/* ---------- Мої покупки й підтвердження купівлі ---------- */
+
+.shop-archive-btn { position: relative; }
+
+.shop-item-owned {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.shop-item-owned span {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.owned-count { background: #262626; color: var(--text-dim); }
+.owned-waiting { background: rgba(155, 125, 255, 0.16); color: #c4b2ff; }
+
+.buy-confirm .star-popup-card { padding-top: 24px; }
+.buy-confirm-emoji { font-size: 3.2rem; line-height: 1; margin-bottom: 8px; }
+
+.buy-confirm-balance {
+  margin: -8px 0 18px;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.buy-confirm-balance b { color: #FFD54A; }
+
+.buy-confirm-cancel {
+  width: 100%;
+  height: 46px;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 23px;
+  background: var(--bg);
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.archive-switch { margin-bottom: 10px; }
+
+.bag-row .shop-item-emoji { position: relative; }
+
+.bag-count {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  padding: 1px 6px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.bag-use-btn {
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 19px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.used-row { flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
+
+.used-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 2px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.used-head .shop-item-emoji { opacity: 0.75; }
+.used-tick { color: var(--accent-green); font-weight: 700; }
+
+.used-dates {
+  padding: 0 2px 12px 62px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.used-dates[hidden] { display: none; }

@@ -1,7 +1,8 @@
 // Магазин винагород: товари з ціною в зірках, купівля за зароблені зірки, архів покупок.
 // Баланс = зароблені зірки (starsEarned у tasks.js: зірки днів мінус штрафи) − витрачені на покупки.
 // Сховище: { items: [{ id, title, emoji, cost, createdAt }],
-//            purchases: [{ id, itemId, title, emoji, cost, at }] }
+//            purchases: [{ id, itemId, title, emoji, cost, at, usedAt }] }
+// Купівля кладе винагороду в «Мої покупки» (usedAt: null — чекає), використати її можна будь-коли.
 // У покупці зберігаємо знімок назви, емодзі й ціни — товар потім можуть змінити чи видалити.
 
 const STORAGE_SHOP = 'daily-shop';
@@ -22,7 +23,9 @@ function loadShop() {
   try {
     const raw = localStorage.getItem(STORAGE_SHOP);
     const data = raw ? JSON.parse(raw) : {};
-    return { items: data.items || [], purchases: data.purchases || [] };
+    // Покупки до появи «використано» вважаємо вже використаними — щоб не з'явилась купа «очікуваних»
+    const purchases = (data.purchases || []).map((p) => ('usedAt' in p ? p : { ...p, usedAt: p.at }));
+    return { items: data.items || [], purchases };
   } catch {
     return { items: [], purchases: [] };
   }
@@ -55,7 +58,19 @@ document.getElementById('open-shop-btn').addEventListener('click', () => {
   shopModal.hidden = false;
 });
 
+function waitingPurchases() {
+  return shopStore.purchases.filter((p) => !p.usedAt);
+}
+
+function updateWaitingBadge() {
+  const badge = document.getElementById('waiting-badge');
+  const count = waitingPurchases().length;
+  badge.hidden = !count;
+  badge.textContent = count;
+}
+
 function renderShop() {
+  updateWaitingBadge();
   const balance = starBalance();
   document.getElementById('shop-balance-value').textContent = Math.max(0, balance);
   document.getElementById('shop-balance-label').textContent = `${pluralStars(Math.max(0, balance))} на балансі`;
@@ -91,6 +106,7 @@ function renderShopItem(item, balance) {
       <span class="shop-item-info">
         <span class="shop-item-title"></span>
         <span class="shop-item-cost">★ ${item.cost}</span>
+        <span class="shop-item-owned"></span>
         ${affordable ? '' : `
         <span class="shop-progress" aria-label="Ще ${missing} ★ до цієї винагороди">
           <span class="shop-progress-bar"><span class="shop-progress-fill" style="width:${share * 100}%"></span></span>
@@ -103,28 +119,61 @@ function renderShopItem(item, balance) {
   card.querySelector('.shop-item-title').textContent = item.title;
   card.querySelector('.shop-item-body').addEventListener('click', () => openShopSheet(item));
 
-  // Купівля в два тапи, щоб не витратити зірки випадково
+  // Скільки разів купували, скільки вже використали і скільки чекає
+  const bought = shopStore.purchases.filter((p) => p.itemId === item.id);
+  const owned = card.querySelector('.shop-item-owned');
+  if (bought.length) {
+    const used = bought.filter((p) => p.usedAt).length;
+    const waiting = bought.length - used;
+    // Окремими чипами, щоб на вузькому екрані переносились цілими
+    owned.innerHTML = `<span class="owned-count">Куплено ${bought.length}</span><span class="owned-count">Використано ${used}</span>`
+      + (waiting ? `<span class="owned-waiting">🎁 ${waiting} чекає</span>` : '');
+  } else {
+    owned.remove();
+  }
+
   const buy = card.querySelector('.shop-buy-btn');
-  let confirmTimer = null;
   buy.addEventListener('click', () => {
     if (starBalance() < item.cost) {
       showShopSad(item);
       return;
     }
-    if (!buy.classList.contains('confirming')) {
-      buy.classList.add('confirming');
-      buy.textContent = `За ★ ${item.cost}?`;
-      confirmTimer = setTimeout(() => {
-        buy.classList.remove('confirming');
-        buy.textContent = 'Купити';
-      }, 3000);
-      return;
-    }
-    clearTimeout(confirmTimer);
-    buyItem(item, buy);
+    openBuyConfirm(item, buy);
   });
   return card;
 }
+
+// ---------- Підтвердження покупки ----------
+
+const buyConfirm = document.getElementById('buy-confirm');
+let buyConfirmItem = null;
+let buyConfirmFrom = null;
+
+function openBuyConfirm(item, fromEl) {
+  buyConfirmItem = item;
+  buyConfirmFrom = fromEl;
+  document.getElementById('buy-confirm-emoji').textContent = item.emoji;
+  document.getElementById('buy-confirm-title').textContent = `Купити «${item.title}»?`;
+  document.getElementById('buy-confirm-balance').innerHTML = `Ціна <b>★ ${item.cost}</b> · Залишиться <b>★ ${starBalance() - item.cost}</b>`;
+  document.getElementById('buy-confirm-ok').textContent = `Купити за ★ ${item.cost}`;
+  buyConfirm.hidden = false;
+}
+
+function closeBuyConfirm() {
+  buyConfirm.hidden = true;
+  buyConfirmItem = null;
+}
+
+document.getElementById('buy-confirm-ok').addEventListener('click', () => {
+  const item = buyConfirmItem;
+  const from = buyConfirmFrom;
+  closeBuyConfirm();
+  if (item && starBalance() >= item.cost) buyItem(item, from);
+});
+document.getElementById('buy-confirm-cancel').addEventListener('click', closeBuyConfirm);
+buyConfirm.addEventListener('click', (e) => {
+  if (e.target === buyConfirm) closeBuyConfirm();
+});
 
 function buyItem(item, fromEl) {
   shopStore.purchases.push({
@@ -134,6 +183,7 @@ function buyItem(item, fromEl) {
     emoji: item.emoji,
     cost: item.cost,
     at: new Date().toISOString(),
+    usedAt: null,
   });
   saveShop();
   if (navigator.vibrate) navigator.vibrate([20, 40, 30]);
@@ -160,7 +210,7 @@ function showShopHappy(item) {
   document.getElementById('shop-popup-art').querySelector('.gift-item').textContent = item.emoji;
   document.getElementById('shop-popup-title').textContent = SHOP_HAPPY_PHRASES[Math.floor(Math.random() * SHOP_HAPPY_PHRASES.length)];
   document.getElementById('shop-popup-text').textContent =
-    `«${item.title}» — ваше. Насолоджуйтесь! На балансі лишилось ${balance} ★.`;
+    `«${item.title}» — ваше! Чекає в «Моїх покупках», використайте, коли захочете. На балансі ${balance} ★.`;
   document.getElementById('shop-popup-btn').textContent = 'Ура! 🎉';
   shopPopup.hidden = false;
   if (!prefersReducedMotion()) setTimeout(goldenRain, 350);
@@ -315,55 +365,164 @@ shopSheet.addEventListener('click', (e) => {
   if (e.target === shopSheet) closeShopSheet();
 });
 
-// ---------- Архів покупок ----------
+// ---------- Мої покупки ----------
+// «Чекають» — куплені, ще не використані (однакові групуються, «Використати» списує найстарішу);
+// «Використано» — по товару: скільки використано з куплених, тап розгортає дати.
 
 const archiveModal = document.getElementById('archive-modal');
+let archiveView = 'waiting';
 
 document.getElementById('open-archive-btn').addEventListener('click', () => {
-  renderArchive();
+  setArchiveView(waitingPurchases().length ? 'waiting' : 'used');
   archiveModal.hidden = false;
 });
 
+document.querySelectorAll('#archive-switch .segment').forEach((btn) => {
+  btn.addEventListener('click', () => setArchiveView(btn.dataset.view));
+});
+
+function setArchiveView(view) {
+  archiveView = view;
+  renderArchive();
+}
+
 function formatPurchaseDate(iso) {
   const date = new Date(iso);
-  const day = date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
+  // Рік — лише для минулих років, щоб рядок не переносився
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  const day = date.toLocaleDateString('uk-UA', sameYear ? { day: 'numeric', month: 'long' } : { day: 'numeric', month: 'long', year: 'numeric' });
   const time = date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
   return `${day}, ${time}`;
 }
 
+function formatShortDate(iso) {
+  return new Date(iso).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
+}
+
+// Групуємо за товаром; якщо товар уже видалили — за назвою й емодзі зі знімка покупки
+function purchaseKey(p) {
+  return p.itemId || `${p.emoji}|${p.title}`;
+}
+
+function groupPurchases(purchases) {
+  const groups = new Map();
+  purchases.forEach((p) => {
+    const key = purchaseKey(p);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  });
+  return [...groups.values()];
+}
+
 function renderArchive() {
-  const purchases = [...shopStore.purchases].sort((a, b) => b.at.localeCompare(a.at));
-  document.getElementById('archive-summary').textContent = purchases.length
-    ? `Витрачено ${starsSpent()} ★ · покупок: ${purchases.length}`
+  const waiting = waitingPurchases();
+  const used = shopStore.purchases.filter((p) => p.usedAt);
+  document.querySelectorAll('#archive-switch .segment').forEach((btn) => {
+    const active = btn.dataset.view === archiveView;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', active);
+    btn.textContent = `${btn.dataset.view === 'waiting' ? 'Чекають' : 'Використано'} · ${btn.dataset.view === 'waiting' ? waiting.length : used.length}`;
+  });
+  document.getElementById('archive-summary').textContent = shopStore.purchases.length
+    ? `Витрачено ${starsSpent()} ★ · покупок: ${shopStore.purchases.length}`
     : '';
+  updateWaitingBadge();
+
   const list = document.getElementById('archive-list');
   list.innerHTML = '';
-  if (!purchases.length) {
+  const items = archiveView === 'waiting' ? waiting : used;
+  if (!items.length) {
+    const [title, text] = archiveView === 'waiting'
+      ? ['Нічого не чекає', 'Куплені винагороди з\'являться тут — використаєте, коли захочете.']
+      : ['Ще нічого не використано', 'Тут буде історія винагород, якими ви вже скористались.'];
     list.innerHTML = `
       <div class="tasks-empty">
         <div class="tasks-empty-icon" aria-hidden="true">
           <svg viewBox="0 0 48 48"><rect x="6" y="9" width="36" height="10" rx="3"/><path d="M10 19v16a4 4 0 0 0 4 4h20a4 4 0 0 0 4-4V19M20 27h8"/></svg>
         </div>
-        <div class="tasks-empty-title">Покупок ще немає</div>
-        <div class="tasks-empty-text">Тут з'являться винагороди, які ви купите за зірки.</div>
+        <div class="tasks-empty-title">${title}</div>
+        <div class="tasks-empty-text">${text}</div>
       </div>`;
     return;
   }
-  purchases.forEach((p) => {
-    const row = document.createElement('div');
-    row.className = 'archive-row';
-    row.innerHTML = `
+
+  if (archiveView === 'waiting') {
+    groupPurchases(waiting)
+      .sort((a, b) => b[b.length - 1].at.localeCompare(a[a.length - 1].at))
+      .forEach((group) => list.appendChild(renderWaitingGroup(group)));
+  } else {
+    groupPurchases(used)
+      .sort((a, b) => lastUsed(b).localeCompare(lastUsed(a)))
+      .forEach((group) => list.appendChild(renderUsedGroup(group)));
+  }
+}
+
+function lastUsed(group) {
+  return group.map((p) => p.usedAt).sort().pop();
+}
+
+function renderWaitingGroup(group) {
+  const sorted = [...group].sort((a, b) => a.at.localeCompare(b.at));
+  const oldest = sorted[0];
+  const row = document.createElement('div');
+  row.className = 'archive-row bag-row';
+  row.innerHTML = `
+    <span class="shop-item-emoji" aria-hidden="true"><span></span>${group.length > 1 ? `<i class="bag-count">×${group.length}</i>` : ''}</span>
+    <span class="archive-info">
+      <span class="archive-title"></span>
+      <span class="archive-date"></span>
+    </span>
+    <button type="button" class="bag-use-btn">Використати</button>`;
+  row.querySelector('.shop-item-emoji span').textContent = oldest.emoji;
+  row.querySelector('.archive-title').textContent = oldest.title;
+  row.querySelector('.archive-date').textContent = `Куплено ${formatPurchaseDate(oldest.at)} · ★ ${oldest.cost}`;
+  row.querySelector('.bag-use-btn').addEventListener('click', (e) => {
+    oldest.usedAt = new Date().toISOString();
+    saveShop();
+    burstFrom(e.currentTarget, FX_COLORS);
+    if (navigator.vibrate) navigator.vibrate(15);
+    renderArchive();
+    if (!document.getElementById('shop-modal').hidden) renderShop();
+    showUndo(`«${oldest.title}» використано — насолоджуйтесь!`, () => {
+      oldest.usedAt = null;
+      saveShop();
+      renderArchive();
+      renderShop();
+    });
+  });
+  return row;
+}
+
+function renderUsedGroup(group) {
+  const key = purchaseKey(group[0]);
+  const bought = shopStore.purchases.filter((p) => purchaseKey(p) === key).length;
+  const dates = group.map((p) => p.usedAt).sort().reverse();
+  const row = document.createElement('div');
+  row.className = 'archive-row used-row';
+  row.innerHTML = `
+    <button type="button" class="used-head">
       <span class="shop-item-emoji" aria-hidden="true"></span>
       <span class="archive-info">
         <span class="archive-title"></span>
         <span class="archive-date"></span>
       </span>
-      <span class="archive-cost">−★ ${p.cost}</span>`;
-    row.querySelector('.shop-item-emoji').textContent = p.emoji;
-    row.querySelector('.archive-title').textContent = p.title;
-    row.querySelector('.archive-date').textContent = formatPurchaseDate(p.at);
-    list.appendChild(row);
+      <span class="used-tick" aria-hidden="true">✓</span>
+    </button>
+    <div class="used-dates" hidden></div>`;
+  row.querySelector('.shop-item-emoji').textContent = group[0].emoji;
+  row.querySelector('.archive-title').textContent = group[0].title;
+  row.querySelector('.archive-date').textContent = `Використано ${group.length} з ${bought} · востаннє ${formatShortDate(dates[0])}`;
+  const datesBox = row.querySelector('.used-dates');
+  dates.forEach((d) => {
+    const line = document.createElement('div');
+    line.textContent = `Використано ${formatPurchaseDate(d)}`;
+    datesBox.appendChild(line);
   });
+  row.querySelector('.used-head').addEventListener('click', () => {
+    datesBox.hidden = !datesBox.hidden;
+    row.classList.toggle('open', !datesBox.hidden);
+  });
+  return row;
 }
 
 // ---------- Резервна копія ----------
@@ -376,5 +535,12 @@ function mergeShopStores(existing, incoming) {
     });
     return result;
   };
-  return { items: byId(existing.items, incoming.items), purchases: byId(existing.purchases, incoming.purchases) };
+  // Копії до появи «використано» — як при завантаженні: старі покупки вважаємо використаними
+  const incomingPurchases = (incoming.purchases || []).map((p) => ('usedAt' in p ? p : { ...p, usedAt: p.at }));
+  // Якщо покупку десь уже використали — лишаємо її використаною
+  const purchases = byId(existing.purchases, incomingPurchases).map((p) => {
+    const other = incomingPurchases.find((x) => x.id === p.id);
+    return !p.usedAt && other?.usedAt ? { ...p, usedAt: other.usedAt } : p;
+  });
+  return { items: byId(existing.items, incoming.items), purchases };
 }
