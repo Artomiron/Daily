@@ -1,5 +1,5 @@
 // Магазин винагород: товари з ціною в зірках, купівля за зароблені зірки, архів покупок.
-// Баланс = зароблені зірки (starsEarned у tasks.js: зірки днів мінус штрафи) − витрачені на покупки.
+// Баланс рахує starLedger у tasks.js: зірки днів, покупки й штрафи по днях, ніколи не нижче нуля.
 // Сховище: { items: [{ id, title, emoji, cost, createdAt }],
 //            purchases: [{ id, itemId, title, emoji, cost, at, usedAt }] }
 // Купівля кладе винагороду в «Мої покупки» (usedAt: null — чекає), використати її можна будь-коли.
@@ -42,7 +42,12 @@ function starsSpent() {
 }
 
 function starBalance() {
-  return starsEarned() - starsSpent();
+  const spentByDate = {};
+  shopStore.purchases.forEach((p) => {
+    const date = toISODate(new Date(p.at));
+    spentByDate[date] = (spentByDate[date] || 0) + p.cost;
+  });
+  return starLedger(spentByDate);
 }
 
 function newId() {
@@ -72,14 +77,8 @@ function updateWaitingBadge() {
 function renderShop() {
   updateWaitingBadge();
   const balance = starBalance();
-  // Штрафи можуть завести баланс у мінус — показуємо борг чесно, а не нуль:
-  // інакше нові зірки «зникають», поки закривають його
-  const debt = balance < 0;
-  document.getElementById('shop-balance-value').textContent = debt ? `−${-balance}` : balance;
-  document.getElementById('shop-balance-label').textContent = debt
-    ? `${pluralStars(-balance)} в борг — нові зірки спершу закриють його`
-    : `${pluralStars(balance)} на балансі`;
-  document.querySelector('.shop-balance').classList.toggle('in-debt', debt);
+  document.getElementById('shop-balance-value').textContent = balance;
+  document.getElementById('shop-balance-label').textContent = `${pluralStars(balance)} на балансі`;
 
   const list = document.getElementById('shop-list');
   list.innerHTML = '';

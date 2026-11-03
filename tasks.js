@@ -147,16 +147,26 @@ function updateDayStars(date) {
   if (date >= STAR_RULES_SINCE) taskStore.dayStars[date] = starsForCount(doneCountOn(date), date);
 }
 
-// Усього зароблено: зірки днів мінус штрафи, плюс зароблене за старими правилами
-function starsEarned() {
+// Баланс зірок — день за днем: спершу зірки дня, потім покупки, потім штрафи за цей день.
+// Нижче нуля баланс не опускається: штраф при порожньому балансі просто не знімає нічого,
+// щоб невдалі дні не заганяли в борг. spentByDate — витрати магазину за днями.
+function starLedger(spentByDate = {}) {
   const before = (map) => Object.entries(map).filter(([d]) => d < STAR_RULES_SINCE).reduce((sum, [, ids]) => sum + ids.length, 0);
-  const legacy = Math.floor((before(taskStore.starDone) - before(taskStore.penalties)) / LEGACY_STAR_GOAL);
-  const dates = new Set([...Object.keys(taskStore.dayStars), ...Object.keys(taskStore.done)]);
-  const earned = [...dates].reduce((sum, d) => sum + dayStarsOn(d), 0);
-  const penalties = Object.entries(taskStore.penalties)
-    .filter(([d]) => d >= STAR_RULES_SINCE)
-    .reduce((sum, [, ids]) => sum + ids.length, 0);
-  return legacy + earned - penalties;
+  // Зароблене за старими правилами (зіркові задачі, 5 — зірка) — стартовий баланс
+  let balance = Math.max(0, Math.floor((before(taskStore.starDone) - before(taskStore.penalties)) / LEGACY_STAR_GOAL));
+  Object.entries(spentByDate).filter(([d]) => d < STAR_RULES_SINCE).forEach(([, cost]) => {
+    balance = Math.max(0, balance - cost);
+  });
+  const dates = new Set([
+    ...Object.keys(taskStore.dayStars), ...Object.keys(taskStore.done),
+    ...Object.keys(taskStore.penalties), ...Object.keys(spentByDate),
+  ]);
+  [...dates].filter((d) => d >= STAR_RULES_SINCE).sort().forEach((date) => {
+    balance += dayStarsOn(date);
+    balance = Math.max(0, balance - (spentByDate[date] || 0));
+    balance = Math.max(0, balance - (taskStore.penalties[date] || []).length);
+  });
+  return balance;
 }
 
 // ---------- Числова мета задачі ----------
