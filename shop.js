@@ -72,8 +72,14 @@ function updateWaitingBadge() {
 function renderShop() {
   updateWaitingBadge();
   const balance = starBalance();
-  document.getElementById('shop-balance-value').textContent = Math.max(0, balance);
-  document.getElementById('shop-balance-label').textContent = `${pluralStars(Math.max(0, balance))} на балансі`;
+  // Штрафи можуть завести баланс у мінус — показуємо борг чесно, а не нуль:
+  // інакше нові зірки «зникають», поки закривають його
+  const debt = balance < 0;
+  document.getElementById('shop-balance-value').textContent = debt ? `−${-balance}` : balance;
+  document.getElementById('shop-balance-label').textContent = debt
+    ? `${pluralStars(-balance)} в борг — нові зірки спершу закриють його`
+    : `${pluralStars(balance)} на балансі`;
+  document.querySelector('.shop-balance').classList.toggle('in-debt', debt);
 
   const list = document.getElementById('shop-list');
   list.innerHTML = '';

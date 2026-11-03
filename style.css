@@ -4232,3 +4232,8 @@ main {
 }
 
 .used-dates[hidden] { display: none; }
+
+/* Баланс у мінусі — борг після штрафів */
+.shop-balance.in-debt { border-color: rgba(224, 86, 86, 0.45); background: rgba(224, 86, 86, 0.08); }
+.shop-balance.in-debt .shop-balance-value { color: var(--danger); }
+.shop-balance.in-debt .shop-balance-star { opacity: 0.45; filter: grayscale(0.6); }
