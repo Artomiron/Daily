@@ -4232,3 +4232,13 @@ main {
 }
 
 .used-dates[hidden] { display: none; }
+
+/* Лічильник «Виконано 2 з 14» під шкалою */
+.tasks-count {
+  margin: -6px 0 2px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.tasks-count b { color: var(--text); font-weight: 600; }

@@ -526,6 +526,8 @@ function renderTasks() {
   const knob = track.querySelector('.tier-knob');
   knob.style.left = `${share * 100}%`;
   knob.textContent = doneCount;
+  document.getElementById('tasks-count-done').textContent = doneCount;
+  document.getElementById('tasks-count-total').textContent = tasks.length;
   if (!starAnimating) renderStarWidget();
 
   const list = document.getElementById('task-list');
